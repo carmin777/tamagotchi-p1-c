@@ -1,0 +1,5 @@
+#!/bin/sh
+# Abre o Tamagotchi P1; carrega o save mais recente se houver.
+cd "$(dirname "$0")/tamatool/linux" || exit 1
+last=$(command ls -t rom_save*.bin 2>/dev/null | head -1)
+exec ./tamatool -r rom.bin ${last:+-l "$last"} "$@"
