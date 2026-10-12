@@ -106,6 +106,7 @@ void draw_pet_overlays(void)
 
 	cost_ms(9.4);
 	if (g.light == 0) {
+		cost_ms(36);                      /* pintar 128 nibbles de preto (medido: ~61 ms com o Z) */
 		for (i = 0; i < 0x40; i++) vram[i] = vram[0x80 + i] = 0xF;
 		if (g.sleep & 8) {
 			g.sleep = ((g.sleep + 1) | 8) & 0xF;

@@ -36,7 +36,7 @@ u8 draw_asset(u8 at, u8 page, u8 idx) { return draw_rom_bitmap(at, 0x1000 + 0x10
 u8 draw_tile(u8 at, u8 tile)          /* 0x7A5 misc_render */
 {
 	if (tile >= 64) {                 /* 0x7B8 clear_16_addrs */
-		cost_ms(1.3);
+		cost_ms(3.7);
 		vram_clear_range(at, 16);
 		return at + 16;
 	}
@@ -110,6 +110,7 @@ void scroll_view_right(u8 limit_hi, u8 step)
 	for (;;) {
 		lcd_present();
 		if ((g.view >> 4) >= limit_hi) return;
+		cost_ms(2.6);
 		g.view += step;
 	}
 }

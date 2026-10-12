@@ -8,7 +8,8 @@ NAMES = {0x10:'sec',0x12:'min',0x14:'hour',0x40:'hunger',0x41:'happy',0x42:'care
  0x4F:'lifespan_strikes',0x50:'stage',0x51:'discipline_misses',0x54:'age',0x5C:'event',0x5D:'species',
  0x7B:'sound_on',0x7C:'egg',0x200:'hunger_timer',0x202:'happy_timer',0x204:'sleep_minutes',0x206:'poop_timer',
  0x208:'call_hunger',0x209:'call_discipline',0x20A:'empty_heart_min',0x20D:'sick_timer',0x210:'stage_timer',
- 0x213:'call_q213',0x214:'call_q214',0x215:'nap',0x216:'baby_awake',0x230:'params'}
+ 0x213:'call_q213',0x214:'call_q214',0x215:'nap',0x216:'baby_awake',0x230:'params',
+ 0x5A:'rng',0x82:'game_rounds',0x83:'game_wins',0x84:'game_result'}
 NAMES.update({0x73:'food_choice',0x78:'saved_cursor78'})   # menu_care.c
 def name(a):
     return next((f'{NAMES[b]}+{a-b}' if a != b else NAMES[b]) for b in sorted(NAMES, reverse=True) if b <= a)
