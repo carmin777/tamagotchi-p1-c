@@ -1,5 +1,7 @@
 name: Windows
 on: [push, workflow_dispatch]
+permissions:
+  contents: write
 jobs:
   build:
     runs-on: windows-latest
@@ -21,8 +23,17 @@ jobs:
           cp src/tama.exe dist/tamagotchi-p1.exe
           cp /mingw64/bin/SDL2.dll dist/
           cp LICENSE dist/
-          printf 'Coloque a ROM do P1 (md5 3fce172403c27274e59723bbb9f6d8e9) em rom\\tama.b ou tama.b ao lado do .exe.\r\nTeclas: setas ou A S D; F = 10x.\r\n' > dist/LEIA-ME.txt
+          printf '1. Abra tamagotchi-p1.exe.\r\n2. Na primeira vez, arraste o arquivo da ROM (tama.b, md5 3fce172403c27274e59723bbb9f6d8e9) para a janela. Ele e lembrado depois.\r\n(Tambem da para arrastar o tama.b sobre o .exe.)\r\nTeclas: setas ou A S D; F = 10x. O jogo salva ao fechar.\r\n' > dist/LEIA-ME.txt
       - uses: actions/upload-artifact@v4
         with:
           name: tamagotchi-p1-windows
           path: dist
+      - name: Anexar à Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          (cd dist && 7z a ../tamagotchi-p1-windows.zip . >/dev/null)
+          gh release create "$GITHUB_REF_NAME" --prerelease --title "$GITHUB_REF_NAME" --notes-file RELEASE_NOTES.md || true
+          gh release upload "$GITHUB_REF_NAME" tamagotchi-p1-windows.zip --clobber

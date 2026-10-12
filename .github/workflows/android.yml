@@ -1,5 +1,7 @@
 name: Android
 on: [push, workflow_dispatch]
+permissions:
+  contents: write
 env:
   SDL_VERSION: 2.30.9
 jobs:
@@ -37,3 +39,11 @@ jobs:
         with:
           name: tamagotchi-p1-android
           path: build-android/app/build/outputs/apk/debug/app-debug.apk
+      - name: Anexar à Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp build-android/app/build/outputs/apk/debug/app-debug.apk tamagotchi-p1-android.apk
+          gh release create "$GITHUB_REF_NAME" --prerelease --title "$GITHUB_REF_NAME" --notes-file RELEASE_NOTES.md || true
+          gh release upload "$GITHUB_REF_NAME" tamagotchi-p1-android.apk --clobber

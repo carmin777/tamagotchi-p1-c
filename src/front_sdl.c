@@ -238,11 +238,70 @@ void front_pump(double t)
 	if (t - emu0 > 0 && wall() - wall0 > 0.5 + (t - emu0) / speed) { wall0 = wall(); emu0 = t; }  /* atrasou: não acelera depois */
 }
 
+/* guarda uma cópia da ROM na pasta de preferências: nas próximas vezes abre direto */
+static void remember_rom(const char *src, const char *pref)
+{
+	char dst[1100], buf[4096];
+	FILE *in, *out;
+	size_t n;
+
+	snprintf(dst, sizeof(dst), "%stama.b", pref);
+	if (!(in = fopen(src, "rb"))) return;
+	if ((out = fopen(dst, "wb"))) {
+		while ((n = fread(buf, 1, sizeof(buf), in)) > 0) fwrite(buf, 1, n, out);
+		fclose(out);
+	}
+	fclose(in);
+}
+
+/* sem ROM: janela com uma seta e o título pedindo para arrastar o tama.b para cima dela */
+static void wait_for_rom_drop(const char *pref)
+{
+	SDL_Event e;
+	int x;
+
+	SDL_SetWindowTitle(win, "Tamagotchi P1 - arraste o arquivo tama.b para esta janela");
+	for (;;) {
+		SDL_SetRenderDrawColor(ren, 0xC8, 0xD0, 0xB0, 255);
+		SDL_RenderClear(ren);
+		SDL_SetRenderDrawColor(ren, 0x30, 0x34, 0x28, 255);
+		for (x = MARGIN; x < WIN_W - MARGIN; x += 24) {      /* borda tracejada */
+			SDL_Rect t = { x, MARGIN, 12, 4 }, b = { x, WIN_H - MARGIN - 4, 12, 4 };
+			SDL_RenderFillRect(ren, &t); SDL_RenderFillRect(ren, &b);
+		}
+		for (x = MARGIN; x < WIN_H - MARGIN; x += 24) {
+			SDL_Rect l = { MARGIN, x, 4, 12 }, r = { WIN_W - MARGIN - 4, x, 4, 12 };
+			SDL_RenderFillRect(ren, &l); SDL_RenderFillRect(ren, &r);
+		}
+		{   /* seta para baixo */
+			SDL_Rect shaft = { WIN_W / 2 - 14, WIN_H / 2 - 90, 28, 100 };
+			int k;
+			SDL_RenderFillRect(ren, &shaft);
+			for (k = 0; k < 40; k++) SDL_RenderDrawLine(ren, WIN_W / 2 - 40 + k, WIN_H / 2 + 10 + k, WIN_W / 2 + 40 - k, WIN_H / 2 + 10 + k);
+		}
+		SDL_RenderPresent(ren);
+		if (want_quit) { SDL_Quit(); exit(0); }
+		if (!SDL_WaitEventTimeout(&e, 200)) continue;
+		if (e.type == SDL_QUIT) { SDL_Quit(); exit(0); }
+		if (e.type == SDL_DROPFILE) {
+			if (rom_load(e.drop.file)) {
+				if (pref) remember_rom(e.drop.file, pref);
+				SDL_free(e.drop.file);
+				SDL_SetWindowTitle(win, "Tamagotchi P1");
+				return;
+			}
+			SDL_SetWindowTitle(win, "Tamagotchi P1 - esse arquivo não é a ROM (tama.b, 12288 bytes); tente de novo");
+			SDL_free(e.drop.file);
+		}
+	}
+}
+
 int main(int argc, char **argv)
 {
-	const char *rom = NULL, *res = NULL;
-	bool fresh = false;
+	const char *rom = NULL, *res = NULL, *drop_arg = NULL;
+	bool fresh = false, have_rom = false;
 	SDL_AudioSpec want = { 0 };
+	char *pref;
 	int i;
 
 	for (i = 1; i < argc; i++) {
@@ -250,39 +309,40 @@ int main(int argc, char **argv)
 		else if (!strcmp(argv[i], "-S") && i + 1 < argc) snprintf(save_path, sizeof(save_path), "%s", argv[++i]);
 		else if (!strcmp(argv[i], "-i") && i + 1 < argc) res = argv[++i];
 		else if (!strcmp(argv[i], "-n")) fresh = true;
+		else if (argv[i][0] != '-') drop_arg = argv[i];       /* arrastou o tama.b sobre o .exe */
 		else {
 			fprintf(stderr, "uso: %s [-r rom] [-S save] [-i icones.png] [-n (novo jogo)]\n", argv[0]);
 			return 1;
 		}
 	}
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0) { fprintf(stderr, "SDL: %s\n", SDL_GetError()); return 1; }
-#ifdef __ANDROID__
-	static char arom[1100];
-	if (!rom) {   /* a ROM foi copiada pela PickActivity para o armazenamento interno do app */
-		snprintf(arom, sizeof(arom), "%s/tama.b", SDL_AndroidGetInternalStoragePath());
-		rom = arom;
-	}
-#endif
-	if (!rom) rom = getenv("TAMA_ROM") ? getenv("TAMA_ROM") : "rom/tama.b";
-	if (!rom_load(rom)) {
-		/* sem -r: tenta também ao lado do executável (duplo clique no Windows) */
+	pref = SDL_GetPrefPath("", "tamagotchi-p1");           /* cria a pasta se preciso */
+	if (rom) {                                              /* -r explícito: sem plano B */
+		if (!rom_load(rom)) { fprintf(stderr, "não consegui ler a ROM %s\n", rom); return 1; }
+		have_rom = true;
+	} else {
 		char *base = SDL_GetBasePath();
 		char alt[1100];
-		bool ok = false;
-		if (base) {
+		const char *fixed[] = { drop_arg, getenv("TAMA_ROM"), "rom/tama.b", NULL };
+#ifdef __ANDROID__
+		snprintf(alt, sizeof(alt), "%s/tama.b", SDL_AndroidGetInternalStoragePath());   /* copiada pela PickActivity */
+		have_rom = rom_load(alt);
+#endif
+		for (i = 0; !have_rom && i < 3; i++) if (fixed[i]) have_rom = rom_load(fixed[i]);
+		if (!have_rom && base) {   /* ao lado do executável (duplo clique no Windows) */
 			snprintf(alt, sizeof(alt), "%srom/tama.b", base);
-			ok = rom_load(alt);
-			if (!ok) { snprintf(alt, sizeof(alt), "%stama.b", base); ok = rom_load(alt); }
-			SDL_free(base);
+			have_rom = rom_load(alt);
+			if (!have_rom) { snprintf(alt, sizeof(alt), "%stama.b", base); have_rom = rom_load(alt); }
 		}
-		if (!ok) { fprintf(stderr, "não consegui ler a ROM %s (coloque tama.b ao lado do programa ou use -r)\n", rom); return 1; }
+		if (!have_rom && pref) {   /* ROM lembrada de uma execução anterior */
+			snprintf(alt, sizeof(alt), "%stama.b", pref);
+			have_rom = rom_load(alt);
+		}
+		SDL_free(base);
 	}
+	if (drop_arg && have_rom && pref) remember_rom(drop_arg, pref);
 	if (!save_path[0]) {
-		char *pref = SDL_GetPrefPath("", "tamagotchi-p1");   /* cria a pasta se preciso */
-		if (pref) {
-			snprintf(save_path, sizeof(save_path), "%ssave.bin", pref);
-			SDL_free(pref);
-		}
+		if (pref) snprintf(save_path, sizeof(save_path), "%ssave.bin", pref);
 	}
 
 	signal(SIGINT, on_signal);
@@ -299,6 +359,8 @@ int main(int argc, char **argv)
 	if (!res) res = "tamatool/res/p1-icons.png";
 	icons_tex = IMG_LoadTexture(ren, res);
 #endif
+	if (!have_rom) wait_for_rom_drop(pref);
+	SDL_free(pref);
 	want.freq = 44100; want.format = AUDIO_S16SYS; want.channels = 1; want.samples = 512; want.callback = audio_cb;
 	audio = SDL_OpenAudioDevice(NULL, 0, &want, NULL, 0);
 	if (audio) SDL_PauseAudioDevice(audio, 0);
