@@ -10,3 +10,4 @@ harness/trace
 web/index.html
 web/index.js
 web/index.wasm
+build-android/

@@ -1,0 +1,39 @@
+name: Android
+on: [push, workflow_dispatch]
+env:
+  SDL_VERSION: 2.30.9
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Baixar SDL2
+        run: |
+          curl -sL https://github.com/libsdl-org/SDL/releases/download/release-$SDL_VERSION/SDL2-$SDL_VERSION.tar.gz | tar xz
+      - name: Montar o projeto Gradle
+        run: |
+          P=$PWD/build-android
+          cp -r SDL2-$SDL_VERSION/android-project $P
+          ln -sfn $PWD/SDL2-$SDL_VERSION $P/app/jni/SDL
+          J=$P/app/src/main
+          cp android/AndroidManifest.xml $J/AndroidManifest.xml
+          mkdir -p $J/java/org/tamap1/game
+          cp android/java/org/tamap1/game/*.java $J/java/org/tamap1/game/
+          cp src/*.c src/tama.h $P/app/jni/src/
+          rm $P/app/jni/src/front_headless.c
+          cp android/Android.mk $P/app/jni/src/Android.mk
+          rm -f $P/app/jni/src/CMakeLists.txt
+          NDKV=$(ls $ANDROID_SDK_ROOT/ndk | sort -V | tail -1)
+          sed -i "s/namespace \"org.libsdl.app\"/namespace \"org.tamap1.game\"/; s/versionName \"1.0\"/versionName \"1.0\"\n        applicationId \"org.tamap1.game\"/; s/compileSdkVersion 34/compileSdkVersion 34\n    ndkVersion \"$NDKV\"/; s/abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64'/abiFilters 'armeabi-v7a', 'arm64-v8a'/" $P/app/build.gradle
+          sed -i 's/^APP_ABI.*/APP_ABI := armeabi-v7a arm64-v8a/' $P/app/jni/Application.mk
+      - name: Compilar APK
+        working-directory: build-android
+        run: ./gradlew --no-daemon assembleDebug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tamagotchi-p1-android
+          path: build-android/app/build/outputs/apk/debug/app-debug.apk

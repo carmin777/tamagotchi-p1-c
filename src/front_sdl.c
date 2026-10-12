@@ -27,7 +27,13 @@
 #define LCD_W (32 * PIXEL)
 #define LCD_H (16 * PIXEL)
 #define WIN_W (LCD_W + 2 * MARGIN)
-#define WIN_H (LCD_H + 2 * ICON + 4 * MARGIN)
+#define BASE_H (LCD_H + 2 * ICON + 4 * MARGIN)
+#ifdef __ANDROID__
+#define PAD_H 160                /* faixa dos 3 botões de toque abaixo do LCD */
+#else
+#define PAD_H 0
+#endif
+#define WIN_H (BASE_H + PAD_H)
 
 u8 front_buttons;
 
@@ -77,6 +83,42 @@ void front_lcd_changed(void) { dirty = true; }
 
 static double wall(void) { return SDL_GetPerformanceCounter() / (double) SDL_GetPerformanceFrequency(); }
 
+#ifdef __ANDROID__
+/* toque: cada dedo acende o botão sob ele (faixa PAD_H, em coordenadas lógicas) */
+static struct { SDL_FingerID id; u8 mask; bool used; } fingers[10];
+
+static u8 touch_buttons(void)
+{
+	u8 m = 0;
+	int i;
+	for (i = 0; i < 10; i++) if (fingers[i].used) m |= fingers[i].mask;
+	return m;
+}
+
+static u8 touch_mask_at(float nx, float ny)
+{
+	int w, h;
+	float lx, ly;
+	SDL_GetWindowSize(win, &w, &h);
+	SDL_RenderWindowToLogical(ren, (int) (nx * w), (int) (ny * h), &lx, &ly);
+	if (ly < BASE_H || ly >= WIN_H || lx < 0 || lx >= WIN_W) return 0;
+	return (u8) (BTN_L >> (int) (lx * 3 / WIN_W));          /* L, M, R */
+}
+
+static void touch_event(const SDL_TouchFingerEvent *t, bool down)
+{
+	int i, slot = -1;
+	for (i = 0; i < 10; i++) if (fingers[i].used && fingers[i].id == t->fingerId) slot = i;
+	if (slot < 0 && down) for (i = 0; i < 10; i++) if (!fingers[i].used) { slot = i; break; }
+	if (slot < 0) return;
+	fingers[slot].id = t->fingerId;
+	fingers[slot].used = down;
+	fingers[slot].mask = down ? touch_mask_at(t->x, t->y) : 0;
+	front_buttons = touch_buttons();
+	dirty = true;
+}
+#endif
+
 static void render(void)
 {
 	SDL_Rect r;
@@ -86,7 +128,7 @@ static void render(void)
 	SDL_RenderClear(ren);
 	for (i = 0; i < 8; i++) {
 		SDL_Rect d = { MARGIN + (i % 4) * (LCD_W / 4) + (LCD_W / 4 - ICON) / 2,
-		               i < 4 ? MARGIN : WIN_H - MARGIN - ICON, ICON, ICON };
+		               i < 4 ? MARGIN : BASE_H - MARGIN - ICON, ICON, ICON };
 		bool on = (lcd_icons >> i) & 1;
 		if (icons_tex) {
 			SDL_Rect s = { (i % 4) * 64, (i / 4) * 64, 64, 64 };
@@ -105,6 +147,19 @@ static void render(void)
 				r.w = r.h = PIXEL - 1;
 				SDL_RenderFillRect(ren, &r);
 			}
+#ifdef __ANDROID__
+	for (i = 0; i < 3; i++) {
+		SDL_Rect b = { MARGIN + i * (WIN_W - 2 * MARGIN) / 3 + 8, BASE_H + 12, (WIN_W - 2 * MARGIN) / 3 - 16, PAD_H - 24 };
+		bool down = (touch_buttons() >> (2 - i)) & 1;       /* esquerda->direita = L, M, R */
+		SDL_SetRenderDrawColor(ren, down ? 0xE8 : 0xB0, down ? 0x70 : 0x40, 0x40, 255);
+		SDL_RenderFillRect(ren, &b);
+		SDL_SetRenderDrawColor(ren, 0xFF, 0xFF, 0xFF, 255);
+		for (y = 0; y <= i; y++) {                           /* 1, 2 ou 3 pontos = A, B, C */
+			SDL_Rect d = { b.x + b.w / 2 - 10 * (i + 1) + 20 * y + 4, b.y + b.h / 2 - 8, 16, 16 };
+			SDL_RenderFillRect(ren, &d);
+		}
+	}
+#endif
 	SDL_RenderPresent(ren);
 	dirty = false;
 }
@@ -169,6 +224,12 @@ void front_pump(double t)
 				front_buttons |= key_button(e.key.keysym.sym);
 			}
 			if (e.type == SDL_KEYUP) front_buttons &= ~key_button(e.key.keysym.sym);
+#ifdef __ANDROID__
+			if (e.type == SDL_FINGERDOWN || e.type == SDL_FINGERMOTION) touch_event(&e.tfinger, true);
+			if (e.type == SDL_FINGERUP) touch_event(&e.tfinger, false);
+			if (e.type == SDL_APP_WILLENTERBACKGROUND || e.type == SDL_APP_TERMINATING)
+				if (save_path[0]) machine_save(save_path);
+#endif
 		}
 		if (dirty && wall() - last_render > 1.0 / 60) { render(); last_render = wall(); }
 		if (ahead <= 0.001) break;
@@ -195,6 +256,13 @@ int main(int argc, char **argv)
 		}
 	}
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0) { fprintf(stderr, "SDL: %s\n", SDL_GetError()); return 1; }
+#ifdef __ANDROID__
+	static char arom[1100];
+	if (!rom) {   /* a ROM foi copiada pela PickActivity para o armazenamento interno do app */
+		snprintf(arom, sizeof(arom), "%s/tama.b", SDL_AndroidGetInternalStoragePath());
+		rom = arom;
+	}
+#endif
 	if (!rom) rom = getenv("TAMA_ROM") ? getenv("TAMA_ROM") : "rom/tama.b";
 	if (!rom_load(rom)) {
 		/* sem -r: tenta também ao lado do executável (duplo clique no Windows) */
@@ -223,6 +291,10 @@ int main(int argc, char **argv)
 	ren = SDL_CreateRenderer(win, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 	if (!ren) ren = SDL_CreateRenderer(win, -1, 0);
 	SDL_SetRenderDrawBlendMode(ren, SDL_BLENDMODE_BLEND);
+#ifdef __ANDROID__
+	SDL_RenderSetLogicalSize(ren, WIN_W, WIN_H);       /* escala para a tela do aparelho */
+	SDL_SetHint(SDL_HINT_ANDROID_TRAP_BACK_BUTTON, "0");
+#endif
 #ifdef HAVE_SDL_IMAGE
 	if (!res) res = "tamatool/res/p1-icons.png";
 	icons_tex = IMG_LoadTexture(ren, res);
