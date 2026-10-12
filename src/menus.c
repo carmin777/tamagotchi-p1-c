@@ -8,6 +8,7 @@ void menu_init(u8 limit, u8 timeout)
 	g.cursor_limit = limit;
 	g.timeout_reload = timeout;
 	g.timeout_s = timeout;
+	cost_ms(1.4);
 	read_buttons();
 }
 

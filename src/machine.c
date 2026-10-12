@@ -8,14 +8,13 @@
  * `harness/trace -P` (tempo de parede x 0,53 = tempo puro, descontadas as interrupções).
  *
  * Interrupções (como no E0C6S46 do P1):
- *  - clock timer 1 Hz (0x11D) em t = 1, 2, 3 ... s; ela também re-arma o prog timer.
- *  - prog timer (0x16F): 256 Hz / 7 => tick a cada 7/256 s depois do re-arme
- *    (36 ticks por segundo, ~27,25 ms em média).
+ *  - clock timer 1 Hz (0x11D) em t = 1, 2, 3 ... s;
+ *  - prog timer (0x16F): 256 Hz / 7, livre => tick a cada 7/256 s (27,34 ms; 36,57/s).
+ *    (A ISR de 1 Hz escreve F78=1, mas isso só o mantém ligado: não reinicia a fase.)
  */
 #include "tama.h"
 
 #define PROG_PERIOD (7.0 / 256.0)
-#define CLOCK_ISR_LATENCY 0.004   /* do início do segundo até a ISR re-armar o prog timer */
 #define PROG_ISR_COST_MUTED 0.0127 /* CPU da ISR do prog timer com o buzzer mudo (passa por buzzer_off) */
 #define PROG_ISR_COST_TONE 0.0109  /* ... e tocando um tom */
 #define CLOCK_ISR_COST 0.0075
@@ -126,18 +125,19 @@ static void clock_timer_int(void)
 	g.seconds_counter_lo++;
 }
 
-/* Executa as interrupções vencidas (cada uma consome seu tempo de CPU) */
+/* Executa as interrupções vencidas (cada uma consome seu tempo de CPU). Uma interrupção
+ * que vence durante outra espera ela terminar; se as duas estão pendentes, a do prog timer
+ * tem prioridade (como no E0C6S46/TamaLIB). */
 static void service_interrupts(void)
 {
 	for (;;) {
-		double next = next_clock < next_prog ? next_clock : next_prog;
-		if (next > now) return;
-		front_pump(next > now ? next : now);
-		if (next == next_clock) {
+		bool prog_due = next_prog <= now, clock_due = next_clock <= now;
+		if (!prog_due && !clock_due) return;
+		front_pump(now);
+		if (!prog_due) {
 			next_clock += 1.0;
 			clock_timer_int();
 			now += CLOCK_ISR_COST;
-			next_prog = next + CLOCK_ISR_LATENCY + PROG_PERIOD;   /* F78=1: re-arma */
 		} else {
 			next_prog += PROG_PERIOD;
 			prog_timer_int();

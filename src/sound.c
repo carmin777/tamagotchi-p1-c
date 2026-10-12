@@ -11,7 +11,8 @@
 /* 0x0BF: dispara um som; repeat = nº de voltas nos saltos (hi=F => infinito) */
 void play_sound(u8 ptr, u8 repeat_lo, u8 repeat_hi)
 {
-	if (!g.sound_on) return;
+	if (!g.sound_on) { cost_ms(1.5); return; }
+	cost_ms(9.0);
 	g.snd_dur = 0;
 	g.snd_ptr = ptr;
 	g.snd_rep_lo = repeat_lo;

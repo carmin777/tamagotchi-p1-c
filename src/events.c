@@ -235,7 +235,7 @@ void dispatch_event(void)
 {
 	u8 e = g.event;
 
-	cost_ms(5);
+	cost_ms(3.8);
 	g.event = 0;
 	switch (e) {
 	case 1: ev_bedtime(); break;

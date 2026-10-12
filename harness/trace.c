@@ -34,7 +34,9 @@
 static timestamp_t now;
 static u8_t lcd[16][32], icons[8];
 static char last_frame[16 * 33 + 16];
-static FILE *f_frames, *f_writes, *f_ram;
+static FILE *f_frames, *f_writes, *f_ram, *f_snd;
+static u32_t snd_freq_dhz;
+static int snd_on = -1, snd_logged_freq = -1;
 static u32_t cov[0x2000];
 static int log_writes = 1, all_frames = 0, commit_frames = 0;
 /* -C: grava o frame só quando a cópia para a VRAM (0x056) ou a escrita de ícones (0x7E1)
@@ -68,8 +70,22 @@ static void hal_sleep_until(timestamp_t ts) { if (ts > now) now = ts; }
 static timestamp_t hal_get_timestamp(void) { return now; }
 static void hal_set_lcd_matrix(u8_t x, u8_t y, bool_t v) { lcd[y][x] = v; }
 static void hal_set_lcd_icon(u8_t i, bool_t v) { icons[i] = v; }
-static void hal_set_frequency(u32_t f) { (void) f; }
-static void hal_play_frequency(bool_t en) { (void) en; }
+/* snd.txt: mudanças do buzzer (tempo, liga/desliga, índice de frequência 0-7) */
+static void log_snd(void)
+{
+	static const u32_t dhz[8] = { 40960, 32768, 27307, 23406, 20480, 16384, 13653, 11703 };
+	int i, idx = -1;
+	for (i = 0; i < 8; i++) if (dhz[i] == snd_freq_dhz) idx = i;
+	if (snd_on == 1) {
+		if (snd_logged_freq != idx) fprintf(f_snd, "%.3f on %d\n", now / (double) TS_FREQ, idx);
+		snd_logged_freq = idx;
+	} else if (snd_logged_freq != -1) {
+		fprintf(f_snd, "%.3f off\n", now / (double) TS_FREQ);
+		snd_logged_freq = -1;
+	}
+}
+static void hal_set_frequency(u32_t f) { snd_freq_dhz = f; if (snd_on == 1) log_snd(); }
+static void hal_play_frequency(bool_t en) { snd_on = en; log_snd(); }
 static int hal_handler(void) { return 0; }
 
 static void emit_frame(int force)
@@ -275,6 +291,7 @@ int main(int argc, char **argv)
 	f_frames = open_out(out, "frames.txt");
 	f_writes = open_out(out, "writes.tsv");
 	f_ram = open_out(out, "ram.txt");
+	f_snd = open_out(out, "snd.txt");
 
 	tamalib_register_hal(&hal);
 	if (tamalib_init(load_rom(rom), NULL, TS_FREQ)) return 1;
@@ -299,5 +316,6 @@ int main(int argc, char **argv)
 	fclose(f_frames);
 	fclose(f_writes);
 	fclose(f_ram);
+	fclose(f_snd);
 	return 0;
 }

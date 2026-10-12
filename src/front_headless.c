@@ -15,7 +15,8 @@ struct ev { double t; int kind; u8 btn; char text[96]; };
 
 static struct ev *evs;
 static int nevs, cur;
-static FILE *f_frames, *f_ram;
+static FILE *f_frames, *f_ram, *f_snd;
+static int snd_logged_freq = -1;
 static char last_frame[16 * 33 + 16];
 static double now_s;
 
@@ -114,6 +115,7 @@ static void dump_ram(const char *label)
 	put8(ram, 0x50, g.stage, 1); put8(ram, 0x51, g.discipline_misses, 1); put8(ram, 0x54, g.age, 2);
 	put8(ram, 0x5C, g.event, 1); put8(ram, 0x5D, g.species, 1);
 	put8(ram, 0x7B, g.sound_on, 1); put8(ram, 0x7C, g.egg, 1);
+	put8(ram, 0x73, g.food_choice, 1); put8(ram, 0x78, g.saved_cursor78, 1);   /* menu_care.c */
 	put8(ram, 0x200, g.hunger_timer, 2); put8(ram, 0x202, g.happy_timer, 2);
 	put8(ram, 0x204, g.sleep_minutes, 2); put8(ram, 0x206, g.poop_timer, 2);
 	put8(ram, 0x208, g.call_hunger, 1); put8(ram, 0x209, g.call_discipline, 1);
@@ -123,6 +125,9 @@ static void dump_ram(const char *label)
 	for (i = 0; i < 26; i++) ram[0x230 + i] = g.p.raw[i];
 	put8(ram, 0x230, g.p.wake_hour, 2); put8(ram, 0x232, g.p.bed_hour, 2);
 	put8(ram, 0x234, g.p.hunger_interval, 2); put8(ram, 0x236, g.p.happy_interval, 2);
+	put8(ram, 0x5A, g.rng, 1);                                  /* menu_info.c */
+	put8(ram, 0x82, g.game_rounds, 1);
+	put8(ram, 0x83, g.game_wins, 1); put8(ram, 0x84, g.game_result, 1);
 
 	fprintf(f_ram, "@%.3f %s\n", now_s, label);
 	for (i = 0; i < 0x280; i++) {
@@ -133,7 +138,17 @@ static void dump_ram(const char *label)
 	}
 	fflush(f_ram);
 }
-void front_set_buzzer(bool on, u8 freq) { (void) on; (void) freq; }
+/* snd.txt: mudanças do buzzer, no mesmo formato do harness */
+void front_set_buzzer(bool on, u8 freq)
+{
+	if (on) {
+		if (snd_logged_freq != (freq & 7)) fprintf(f_snd, "%.3f on %d\n", now_s, freq & 7);
+		snd_logged_freq = freq & 7;
+	} else if (snd_logged_freq != -1) {
+		fprintf(f_snd, "%.3f off\n", now_s);
+		snd_logged_freq = -1;
+	}
+}
 
 void front_pump(double t)
 {
@@ -146,7 +161,7 @@ void front_pump(double t)
 		case EV_MARK: fprintf(f_frames, "## %s\n", e->text); break;
 		case EV_FRAME: emit_frame(1); break;
 		case EV_DUMP: dump_ram(e->text); break;
-		case EV_END: fclose(f_frames); fclose(f_ram); exit(0);
+		case EV_END: fclose(f_frames); fclose(f_ram); fclose(f_snd); exit(0);
 		}
 	}
 }
@@ -174,6 +189,9 @@ int main(int argc, char **argv)
 	snprintf(path, sizeof(path), "%s/ram.txt", out);
 	f_ram = fopen(path, "w");
 	if (!f_ram) { perror(path); return 1; }
+	snprintf(path, sizeof(path), "%s/snd.txt", out);
+	f_snd = fopen(path, "w");
+	if (!f_snd) { perror(path); return 1; }
 
 	machine_reset();
 	game_main();
