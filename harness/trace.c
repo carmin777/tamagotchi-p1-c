@@ -7,6 +7,8 @@
  *   writes.tsv  - escritas na RAM (t_ms pc addr old new), só quando o valor muda
  *   cov.bin     - contagem de execuções por PC (u32 x 0x2000)
  *   ram.txt     - dumps de RAM pedidos pelo script (comando "dump")
+ *   -C          - grava frames só ao fim de cada cópia p/ VRAM / escrita de ícones
+ *   -P 0xADDR   - (repetível) perfil de tempo emulado por chamada à rotina em ADDR (até retornar)
  *
  * Script (uma linha por comando, '#' comenta):
  *   wait <seg>          avança o tempo emulado
@@ -27,14 +29,28 @@
 #include "tamalib/tamalib.h"
 #include "state.h"
 
-#define TS_FREQ 1000000ULL /* timestamps em microssegundos */
+#define TS_FREQ 32768ULL     /* timestamps em ticks do oscilador (exato: sem arredondar ciclos) */
 
 static timestamp_t now;
 static u8_t lcd[16][32], icons[8];
 static char last_frame[16 * 33 + 16];
 static FILE *f_frames, *f_writes, *f_ram;
 static u32_t cov[0x2000];
-static int log_writes = 1, all_frames = 0;
+static int log_writes = 1, all_frames = 0, commit_frames = 0;
+/* -C: grava o frame só quando a cópia para a VRAM (0x056) ou a escrita de ícones (0x7E1)
+ * termina — os mesmos pontos em que a reescrita apresenta um quadro */
+static int commit_active[2];
+static u32_t commit_depth[2];
+static const u13_t commit_addr[2] = { 0x056, 0x7E1 };
+
+/* Profiler: -P 0xADDR mede quanto tempo emulado cada chamada à rotina leva até retornar */
+#define MAX_PROF 32
+static struct { u13_t addr; int active; u32_t depth; timestamp_t t0, isr0; unsigned long n; double sum, min, max, pure; } prof[MAX_PROF];
+static int nprof;
+/* tempo acumulado dentro das ISRs (0x116 genérica, 0x11D clock, 0x16F prog) */
+static timestamp_t isr_total, isr_t0;
+static int isr_active;
+static u32_t isr_depth;
 
 static void *hal_malloc(u32_t size) { return malloc(size); }
 static void hal_free(void *p) { free(p); }
@@ -73,7 +89,7 @@ static void emit_frame(int force)
 	fprintf(f_frames, "@%.3f\n%s", now / (double) TS_FREQ, buf);
 }
 
-static void hal_update_screen(void) { emit_frame(all_frames); }
+static void hal_update_screen(void) { if (!commit_frames) emit_frame(all_frames); }
 
 static void mem_hook(u12_t n, u4_t old, u4_t v, u13_t pc)
 {
@@ -81,7 +97,35 @@ static void mem_hook(u12_t n, u4_t old, u4_t v, u13_t pc)
 		fprintf(f_writes, "%.3f\t%04X\t%03X\t%X\t%X\n", now / (double) TS_FREQ, pc, n, old, v);
 }
 
-static void pc_hook(u13_t pc) { cov[pc & 0x1FFF]++; }
+static void pc_hook(u13_t pc)
+{
+	int i;
+	u32_t depth;
+
+	cov[pc & 0x1FFF]++;
+	depth = *tamalib_get_state()->call_depth;
+	if (commit_frames) {
+		for (i = 0; i < 2; i++) {
+			if (commit_active[i] && depth < commit_depth[i]) { commit_active[i] = 0; emit_frame(0); }
+			if (!commit_active[i] && pc == commit_addr[i]) { commit_active[i] = 1; commit_depth[i] = depth; }
+		}
+	}
+	if (!nprof) return;
+	if (isr_active && depth < isr_depth) { isr_active = 0; isr_total += now - isr_t0; }
+	if (!isr_active && (pc == 0x11D || pc == 0x16F || pc == 0x116)) { isr_active = 1; isr_depth = depth; isr_t0 = now; }
+	for (i = 0; i < nprof; i++) {
+		if (prof[i].active && depth < prof[i].depth) {
+			double d = (now - prof[i].t0) * 1000.0 / TS_FREQ;
+			prof[i].active = 0; prof[i].n++; prof[i].sum += d;
+			prof[i].pure += d - (isr_total - prof[i].isr0) * 1000.0 / TS_FREQ;
+			if (prof[i].n == 1 || d < prof[i].min) prof[i].min = d;
+			if (d > prof[i].max) prof[i].max = d;
+		}
+		if (!prof[i].active && pc == prof[i].addr) {
+			prof[i].active = 1; prof[i].depth = depth; prof[i].t0 = now; prof[i].isr0 = isr_total;
+		}
+	}
+}
 
 static hal_t hal = {
 	.malloc = hal_malloc, .free = hal_free, .halt = hal_halt,
@@ -212,7 +256,7 @@ int main(int argc, char **argv)
 	FILE *fs;
 	int opt;
 
-	while ((opt = getopt(argc, argv, "r:s:o:l:WF")) != -1) {
+	while ((opt = getopt(argc, argv, "r:s:o:l:WFCP:")) != -1) {
 		switch (opt) {
 		case 'r': rom = optarg; break;
 		case 's': script = optarg; break;
@@ -220,6 +264,8 @@ int main(int argc, char **argv)
 		case 'l': load = optarg; break;
 		case 'W': log_writes = 0; break;
 		case 'F': all_frames = 1; break;
+		case 'C': commit_frames = 1; break;
+		case 'P': if (nprof < MAX_PROF) prof[nprof++].addr = strtol(optarg, NULL, 0); break;
 		default:
 			fprintf(stderr, "uso: %s [-r rom] [-s script|-] [-o dir] [-l save] [-W sem writes] [-F todo frame]\n", argv[0]);
 			return 1;
@@ -246,6 +292,10 @@ int main(int argc, char **argv)
 		fwrite(cov, sizeof(cov), 1, fc);
 		fclose(fc);
 	}
+	for (opt = 0; opt < nprof; opt++)
+		fprintf(stderr, "prof %04X: n=%lu média=%.2f ms min=%.2f max=%.2f  puro=%.2f ms\n", prof[opt].addr, prof[opt].n,
+			prof[opt].n ? prof[opt].sum / prof[opt].n : 0, prof[opt].min, prof[opt].max,
+			prof[opt].n ? prof[opt].pure / prof[opt].n : 0);
 	fclose(f_frames);
 	fclose(f_writes);
 	fclose(f_ram);

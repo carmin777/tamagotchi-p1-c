@@ -1,0 +1,73 @@
+# gerado a partir de t_hatch.txt com dumps a cada minuto
+# t_hatch.txt - boot, acerta 08:00, vai ao ovo, espera chocar e deixa o bebe sozinho 20 min.
+wait 4.000
+press M           # ajuste do relogio
+wait 2.300
+press L
+press L
+press L
+press L
+press L
+press L
+press L
+press L           # 08:00 AM
+press R           # confirma
+wait 3.300
+press M           # tela do pet (ovo)
+mark ovo
+wait 24.900
+dump t40
+wait 60.000
+dump t100
+wait 60.000
+dump t160
+wait 60.000
+dump t220
+wait 60.000
+dump t280
+wait 60.000
+dump t340
+wait 5.100
+mark bebe
+wait 54.900
+dump t400
+wait 60.000
+dump t460
+wait 60.000
+dump t520
+wait 60.000
+dump t580
+wait 60.000
+dump t640
+wait 60.000
+dump t700
+wait 60.000
+dump t760
+wait 60.000
+dump t820
+wait 60.000
+dump t880
+wait 60.000
+dump t940
+wait 60.000
+dump t1000
+wait 60.000
+dump t1060
+wait 60.000
+dump t1120
+wait 60.000
+dump t1180
+wait 60.000
+dump t1240
+wait 60.000
+dump t1300
+wait 60.000
+dump t1360
+wait 60.000
+dump t1420
+wait 60.000
+dump t1480
+wait 60.000
+dump t1540
+wait 5.100
+

@@ -1,0 +1,19 @@
+# t_hatch.txt - boot, acerta 08:00, vai ao ovo, espera chocar e deixa o bebe sozinho 20 min.
+wait 4
+press M           # ajuste do relogio
+wait 2.3
+press L
+press L
+press L
+press L
+press L
+press L
+press L
+press L           # 08:00 AM
+press R           # confirma
+wait 3.3
+press M           # tela do pet (ovo)
+mark ovo
+wait 330          # ovo choca ~5 min depois de o relogio andar
+mark bebe
+wait 1200

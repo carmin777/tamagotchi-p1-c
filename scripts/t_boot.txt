@@ -1,0 +1,21 @@
+# boot_set_clock.txt - liga o aparelho e acerta o relogio para 08:00 AM, depois aguarda o ovo.
+# Fluxo medido (ver re/flows.md): ovo/tela inicial -> M entra no ajuste de relogio;
+# L = +1 hora (24h, mostra AM/PM); M = +1 minuto; R = confirma (relogio passa a correr);
+# M de novo = sai do ajuste e mostra o ovo.
+wait 4            # boot: ~0.4s ate a primeira tela; esperar a animacao inicial
+press M           # entra no ajuste do relogio
+wait 2            # a transicao come o primeiro botao se nao esperar
+mark set_hour
+press L           # 1
+press L           # 2
+press L           # 3
+press L           # 4
+press L           # 5
+press L           # 6
+press L           # 7
+press L           # 8   -> 08:00 AM
+mark confirm
+press R           # confirma o horario
+wait 10
+mark egg
+press M           # sai para o ovo

@@ -4,3 +4,6 @@ tamagotchi-disassembled/
 *.bin
 build/
 out/
+src/tama-headless
+src/tama
+harness/trace
