@@ -32,3 +32,23 @@ emulador TamaLIB: o mesmo script de input tem que produzir a mesma sequência de
   Marque `(?)` o que for hipótese.
 - Nomes: snake_case descritivo (`hunger_hearts`, `care_mistakes`), mantendo o endereço ao lado.
 - Cada agente escreve só no(s) arquivo(s) que lhe foram atribuídos.
+
+## A reescrita (src/) — como funciona e como validar
+- `make -C src` → `src/tama-headless -s script.txt -o out/x` (mesmo formato de script do harness;
+  grava `frames.txt` e, com `dump`, `ram.txt`). `save`/`load` NÃO funcionam na reescrita: scripts
+  de teste começam do boot (ver `scripts/t_hatch.txt`: boot → 08:00 → ovo → choca em ~310 s).
+- Estilo: código sequencial/bloqueante como o original; cada função tem o endereço da ROM em
+  comentário; estado em `struct game g` (tama.h) com o endereço de RAM ao lado de cada campo.
+  Dados (sprites, scripts, sons, tabelas) lidos da ROM com `rom_table`/`rom_byte`.
+- **Tempo**: `cost_ms(x)` = x ms de CPU *pura* (as ISRs roubam tempo à parte). Meça cada rotina
+  no original com `harness/trace -W -s script -o out/p -P 0xADDR` → use o campo `puro=`.
+  Distribua o custo na ordem em que o original lê/escreve estado (uma ISR pode cair no meio).
+- **Validação** (oráculo = emulador):
+  1. `harness/trace -C -W -s S -o out/ref` e `src/tama-headless -s S -o out/nat`
+  2. `tools/cmpframes.py --min 0 out/ref/frames.txt out/nat/frames.txt` (estrito, frame a frame)
+     ou `--tol 15` (tolerante: execuções longas, o ritmo das animações deriva ~1-2%).
+  3. Com `dump` no script: `tools/cmpram.py out/ref/ram.txt out/nat/ram.txt` (estado do jogo).
+     Campos novos em `struct game` → acrescentar em `dump_ram()` (front_headless.c) e em NAMES (cmpram.py).
+  4. `tools/frames.py arq T0 T1 [--full]` lista/mostra frames.
+- Corridas: input exatamente na virada do segundo pode dar resultado diferente; nos scripts,
+  evite apertar botões perto de x,0 s do relógio do jogo.
