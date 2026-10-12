@@ -1,7 +1,7 @@
-# gerado a partir de t_hatch.txt com dumps a cada minuto
-# t_hatch.txt - boot, acerta 08:00, vai ao ovo, espera chocar e deixa o bebe sozinho 20 min.
+# generated from t_hatch.txt with dumps every minute
+# t_hatch.txt - boot, set 08:00, go to the egg, wait for hatching and leave the baby alone for 20 min.
 wait 4.000
-press M           # ajuste do relogio
+press M           # clock setting
 wait 2.300
 press L
 press L
@@ -11,10 +11,10 @@ press L
 press L
 press L
 press L           # 08:00 AM
-press R           # confirma
+press R           # confirm
 wait 3.300
-press M           # tela do pet (ovo)
-mark ovo
+press M           # pet screen (egg)
+mark egg
 wait 24.900
 dump t40
 wait 60.000
@@ -28,7 +28,7 @@ dump t280
 wait 60.000
 dump t340
 wait 5.100
-mark bebe
+mark baby
 wait 54.900
 dump t400
 wait 60.000

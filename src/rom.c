@@ -1,4 +1,4 @@
-/* Leitura da ROM original e das suas tabelas lbpx/retd. */
+/* Reading the original ROM and its lbpx/retd tables. */
 #include <stdio.h>
 #include <stdlib.h>
 #include "tama.h"
@@ -30,7 +30,7 @@ u8 rom_byte(u16 addr)
 	u16 w = rom_word(addr);
 
 	if (!is_lbpx(w) && !is_retd(w)) {
-		fprintf(stderr, "rom: palavra 0x%03X em 0x%04X não é dado\n", w, addr);
+		fprintf(stderr, "rom: word 0x%03X at 0x%04X is not data\n", w, addr);
 		abort();
 	}
 	return w & 0xFF;
@@ -43,7 +43,7 @@ int rom_table(u16 addr, u8 *out, int max)
 	for (;;) {
 		u16 w = rom_word(addr++);
 		if (!is_lbpx(w) && !is_retd(w)) {
-			fprintf(stderr, "rom: tabela em 0x%04X tem palavra 0x%03X\n", addr - 1, w);
+			fprintf(stderr, "rom: table at 0x%04X has word 0x%03X\n", addr - 1, w);
 			abort();
 		}
 		if (n < max) out[n] = w & 0xFF;

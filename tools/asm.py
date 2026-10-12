@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Imprime o trecho de tama.asm (agg23) entre dois endereços de ROM, com comentários.
-uso: tools/asm.py 0x100 0x1ff   |   tools/asm.py label_32"""
+"""Prints the stretch of tama.asm (agg23) between two ROM addresses, with comments.
+usage: tools/asm.py 0x100 0x1ff   |   tools/asm.py label_32"""
 import re, sys, os
 ASM = os.path.join(os.path.dirname(__file__), '..', 'tamagotchi-disassembled', 'tama.asm')
 lines = open(ASM).read().split('\n')

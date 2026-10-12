@@ -1,8 +1,8 @@
-# t_care_discipline.txt - bebe: disciplina sem chamado (so a careta); depois, durante o cochilo
-# (~2700-3000 s), disciplina/banheiro/remedio/comida nao fazem nada e a luz apaga (Z no escuro).
-# R cancela, depois timeout do seletor e do menu.
+# t_care_discipline.txt - baby: discipline without a call (only the grimace); then, during the nap
+# (~2700-3000 s), discipline/toilet/medicine/food do nothing and the light turns off (Z in the dark).
+# R cancels, then timeout of the selector and of the menu.
 wait 4
-press M           # ajuste do relogio
+press M           # clock setting
 wait 2.3
 press L
 press L
@@ -12,27 +12,27 @@ press L
 press L
 press L
 press L           # 08:00 AM
-press R           # confirma
+press R           # confirm
 wait 3.3
-press M           # tela do pet (ovo)
-mark ovo
-wait 330          # ovo choca ~5 min depois de o relogio andar
+press M           # pet screen (egg)
+mark egg
+wait 330          # egg hatches ~5 min after the clock starts running
 wait 10.55
-dump antes
+dump before
 press L
 press L
 press L
 press L
 press L
 press L
-press L           # icone disciplina
-press M           # sem chamado: careta
-mark careta
+press L           # discipline icon
+press M           # no call: grimace
+mark grimace
 wait 6.0
-dump careta
-wait 2460         # cochilo do bebe
-dump dormindo
-mark dormindo
+dump grimace
+wait 2460         # baby's nap
+dump sleeping
+mark sleeping
 press L
 press L
 press L
@@ -40,7 +40,7 @@ press L
 press L
 press L
 press L
-press M           # icone 7 dormindo: nada
+press M           # icon 7 while sleeping: nothing
 wait 1.0
 press R
 press L
@@ -48,24 +48,24 @@ press L
 press L
 press L
 press L
-press M           # icone 5 dormindo: nada
+press M           # icon 5 while sleeping: nothing
 wait 1.0
 press R
 press L
 press L
 press L
 press L
-press M           # icone 4 dormindo: nada
+press M           # icon 4 while sleeping: nothing
 wait 1.0
 press R
 press L
-press M           # icone 1 dormindo: nada
+press M           # icon 1 while sleeping: nothing
 wait 1.0
 press R
 press L
-press L           # luz
-press M           # seletor
+press L           # light
+press M           # selector
 press L           # -> OFF
-press M           # apaga
+press M           # turns it off
 wait 4.0
-dump escuro
+dump dark

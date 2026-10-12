@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Compara dumps de RAM (ram.txt) do harness e da reescrita, dump a dump (pela ordem),
-só nos nibbles que a reescrita mapeia (os outros aparecem como '-').
-uso: tools/cmpram.py ref/ram.txt nova/ram.txt"""
+"""Compares RAM dumps (ram.txt) of the harness and of the rewrite, dump by dump (in order),
+only on the nibbles that the rewrite maps (the others show up as '-').
+usage: tools/cmpram.py ref/ram.txt new/ram.txt"""
 import sys
 NAMES = {0x10:'sec',0x12:'min',0x14:'hour',0x40:'hunger',0x41:'happy',0x42:'care_mistakes',0x43:'discipline',
  0x46:'weight',0x48:'sick',0x49:'sick_count',0x4A:'sleep',0x4B:'light',0x4D:'poop',0x4E:'lifespan_over',
@@ -25,8 +25,8 @@ ref, new = load(sys.argv[1]), load(sys.argv[2])
 bad = 0
 for (hr, r), (hn, n) in zip(ref, new):
     diffs = [(i, r[i], n[i]) for i in range(min(len(r), len(n))) if n[i] != '-' and r[i] != n[i]]
-    print(f'{hr}  |  {hn}: ' + ('ok' if not diffs else f'{len(diffs)} diferença(s)'))
+    print(f'{hr}  |  {hn}: ' + ('ok' if not diffs else f'{len(diffs)} difference(s)'))
     for i, a, b in diffs:
-        print(f'   0x{i:03X} {name(i):22s} ref={a} nova={b}')
+        print(f'   0x{i:03X} {name(i):22s} ref={a} new={b}')
     bad += bool(diffs)
 sys.exit(1 if bad else 0)

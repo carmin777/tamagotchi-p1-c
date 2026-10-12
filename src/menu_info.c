@@ -1,31 +1,31 @@
-/* Ícones de informação: status (0x814) e o jogo de adivinhar (0x624). */
+/* Information icons: status (0x814) and the guessing game (0x624). */
 #include "tama.h"
 
 /* ---------------------------------------------------------------- 0x814 status */
 
-/* 0x867 label_258: moldura do medidor de disciplina na faixa de baixo (vram 0xC2..0xFF)
- * e g.discipline−1 segmentos cheios (no máximo 14) */
+/* 0x867 label_258: frame of the discipline meter in the lower strip (vram 0xC2..0xFF)
+ * and g.discipline−1 filled segments (at most 14) */
 static void draw_discipline_gauge(void)
 {
 	u8 at = 0xC2, n;
 	int i;
 
 	cost_ms(18.8);
-	vram[at++] = 0xD; vram[at++] = 0x3;                       /* borda esquerda */
+	vram[at++] = 0xD; vram[at++] = 0x3;                       /* left border */
 	for (i = 0; i < 14; i++) { vram[at++] = 2; vram[at++] = 4; }
-	vram[at++] = 0x3; vram[at++] = 0x4;                       /* emenda do meio (0xE0) */
+	vram[at++] = 0x3; vram[at++] = 0x4;                       /* middle joint (0xE0) */
 	for (i = 0; i < 14; i++) { vram[at++] = 2; vram[at++] = 4; }
-	vram[at++] = 0xD; vram[at++] = 0x3;                       /* borda direita */
+	vram[at++] = 0xD; vram[at++] = 0x3;                       /* right border */
 
 	n = g.discipline ? g.discipline : 1;
-	for (at = 0xC6; --n; at += 4) {                           /* segmento = 2 colunas cheias */
+	for (at = 0xC6; --n; at += 4) {                           /* segment = 2 filled columns */
 		cost_ms(1.1);
 		vram[at] = 0xA; vram[at + 1] = 0x5;
 	}
 }
 
-/* 0x88C label_266: 4 corações (0x1C cheio / 0x1D vazio) para fome/felicidade v (0..F, em
- * 1/4 de coração): 0-2 → 0, 3-6 → 1, 7-10 → 2, 11-14 → 3, F → 4 */
+/* 0x88C label_266: 4 hearts (0x1C full / 0x1D empty) for hunger/happiness v (0..F, in
+ * 1/4 hearts): 0-2 → 0, 3-6 → 1, 7-10 → 2, 11-14 → 3, F → 4 */
 static void hearts_tiles(u8 *t, u8 v)
 {
 	u8 n = (v >= 0xF) ? 4 : ((v + 1) >> 2) & 3;
@@ -37,24 +37,24 @@ static void hearts_tiles(u8 *t, u8 v)
 	}
 }
 
-/* 0x836 label_253: os 8 tiles da página g.m80 (0x080); devolve se a página tem o medidor
- * de disciplina (0x081) */
+/* 0x836 label_253: the 8 tiles of page g.m80 (0x080); returns whether the page has the
+ * discipline meter (0x081) */
 static bool status_build_page(u8 *t)
 {
 	cost_ms(4.5);
 	switch (g.m80) {
-	case 0:                                                   /* 0x843: idade e peso */
-		t[0] = 0x18;                                          /* bebê */
-		t[1] = NIB(g.age, 1) ? NIB(g.age, 1) : 0xF0;          /* dezena (0 = branco) */
+	case 0:                                                   /* 0x843: age and weight */
+		t[0] = 0x18;                                          /* baby */
+		t[1] = NIB(g.age, 1) ? NIB(g.age, 1) : 0xF0;          /* tens digit (0 = blank) */
 		t[2] = NIB(g.age, 0);
 		t[3] = 0x19;                                          /* "yr" */
-		t[4] = 0x1A;                                          /* balança */
+		t[4] = 0x1A;                                          /* scale */
 		t[5] = NIB(g.weight, 1) ? NIB(g.weight, 1) : 0xF0;
 		t[6] = NIB(g.weight, 0);
 		t[7] = 0x1B;                                          /* "oz" */
 		cost_ms(1.7);
 		return false;
-	case 1:                                                   /* 0x85C: "Discipline" + medidor */
+	case 1:                                                   /* 0x85C: "Discipline" + meter */
 		t[0] = 0x34; t[1] = 0x35; t[2] = 0x36; t[3] = 0x37;
 		t[4] = t[5] = t[6] = t[7] = 0xFF;
 		return true;
@@ -71,7 +71,7 @@ static bool status_build_page(u8 *t)
 	}
 }
 
-/* 0x0DE label_34: desenha os 8 tiles na página direita da vram e aponta a janela para ela */
+/* 0x0DE label_34: draws the 8 tiles on the right page of the vram and points the window at it */
 static void draw_tile_page(const u8 *t)
 {
 	cost_ms(2);
@@ -80,8 +80,8 @@ static void draw_tile_page(const u8 *t)
 	render_tile_list(0x40, t);
 }
 
-/* 0x814 label_247: 4 páginas (idade/peso, disciplina, fome, felicidade). L ou M avançam,
- * R ou 15 s sem botão saem; um evento pendente também sai (ao virar a página). */
+/* 0x814 label_247: 4 pages (age/weight, discipline, hunger, happiness). L or M advance,
+ * R or 15 s without a button exit; a pending event also exits (on turning the page). */
 void menu_status(void)
 {
 	g.m80 = 0;
@@ -104,13 +104,13 @@ void menu_status(void)
 		if (check_events()) break;
 	}
 out:
-	play_beep();                                             /* 0x835 -> 0x51A: volta ao menu */
+	play_beep();                                             /* 0x835 -> 0x51A: back to the menu */
 }
 
-/* ---------------------------------------------------------------- 0x624 jogo */
+/* ---------------------------------------------------------------- 0x624 game */
 
-/* 0x900 label_282: sorteio com o contador livre 0x05A (+1 por tick do prog timer):
- * soma chance+1 e dá "vai-um" com probabilidade (chance+1)/16 */
+/* 0x900 label_282: draw using the free-running counter 0x05A (+1 per prog timer tick):
+ * adds chance+1 and yields a carry with probability (chance+1)/16 */
 static bool rand_chance(u8 chance)
 {
 	unsigned s;
@@ -121,7 +121,7 @@ static bool rand_chance(u8 chance)
 	return s > 0xF;
 }
 
-/* 0xCE5 label_331 (add_heart), aqui só para a felicidade */
+/* 0xCE5 label_331 (add_heart), here only for happiness */
 static void add_happy_heart(void)
 {
 	cost_ms(2);
@@ -129,7 +129,7 @@ static void add_happy_heart(void)
 	if (g.hunger && g.happy) g.call_hunger = 0;
 }
 
-/* 0x6E5 label_214 (mesmo que o de events.c) */
+/* 0x6E5 label_214 (same as the one in events.c) */
 static void clamp_weight(void)
 {
 	cost_ms(4);
@@ -137,7 +137,7 @@ static void clamp_weight(void)
 	else if (g.weight >= g.p.weight_max) g.weight = g.p.weight_max;
 }
 
-/* 0x6D4 label_211: seta do palpite (L = ◄ à esquerda, M = ► à direita) */
+/* 0x6D4 label_211: guess arrow (L = ◄ left, M = ► right) */
 static void draw_guess_arrow(void)
 {
 	cost_ms(1.5);
@@ -146,20 +146,20 @@ static void draw_guess_arrow(void)
 	else draw_tile(0xB0, 0x27);
 }
 
-/* 0x6C8 / 0x6CD label_208 / label_209: fanfarra e pet feliz / triste */
+/* 0x6C8 / 0x6CD label_208 / label_209: fanfare and happy / sad pet */
 static void win_feedback(void)  { play_sound(0x83, 0, 0xF); play_overlay_anim(7, 5, 6); }
 static void lose_feedback(void) { play_sound(0x9E, 0, 0xF); play_overlay_anim(8, 5, 3); }
 
-/* 0x064C label_198: uma rodada. Devolve false se o jogador saiu (R ou timeout) */
+/* 0x064C label_198: one round. Returns false if the player left (R or timeout) */
 static bool game_round(void)
 {
-	/* o resultado é sorteado antes do palpite; o palpite só decide o lado que o pet olha */
+	/* the result is drawn before the guess; the guess only decides which side the pet looks at */
 	cost_ms(2.5);
 	g.game_guess = 0;
-	g.game_wait = g.p.raw[0x16];                             /* 0x246: quadros após o palpite (vitória) */
+	g.game_wait = g.p.raw[0x16];                             /* 0x246: frames after the guess (win) */
 	g.game_result = 8;
-	if (!rand_chance(g.p.raw[0x15])) {                       /* 0x245: chance de vitória */
-		g.game_wait = g.p.raw[0x17];                         /* 0x247: ... (derrota) */
+	if (!rand_chance(g.p.raw[0x15])) {                       /* 0x245: chance of winning */
+		g.game_wait = g.p.raw[0x17];                         /* 0x247: ... (loss) */
 		g.game_result = 0;
 	}
 	cost_ms(1);
@@ -168,7 +168,7 @@ static bool game_round(void)
 	read_buttons();
 	g.timeout_s = 15;
 	for (;;) {                                               /* 0x667 label_200 */
-		play_sound(0x97, g.btn_held, 0xF);                   /* "aguardando palpite" */
+		play_sound(0x97, g.btn_held, 0xF);                   /* "waiting for a guess" */
 		vram_clear();
 		step_pet_animation();
 		draw_guess_arrow();
@@ -183,7 +183,7 @@ static bool game_round(void)
 		}
 		if (--g.game_wait == 0) break;                       /* 0x67A label_201 */
 	}
-	/* resolução: pet de frente para o lado sorteado */
+	/* resolution: pet facing the drawn side */
 	play_beep();
 	vram_clear();
 	g.draw_at = 0x10;
@@ -202,16 +202,16 @@ static bool game_round(void)
 	return true;
 }
 
-/* 0x624 label_196: "para que lado ele vai olhar?" — 5 rodadas; 3+ acertos = +1 coração de
- * felicidade; cada partida custa 1 oz. Joga de novo até R ou um evento pendente. */
+/* 0x624 label_196: "which way will it look?" — 5 rounds; 3+ correct = +1 happiness
+ * heart; each game costs 1 oz. Plays again until R or a pending event. */
 void menu_game(void)
 {
-	if (g.sleep & 8) return;                                 /* dormindo: nada (0x625 -> 0x51A) */
+	if (g.sleep & 8) return;                                 /* sleeping: nothing (0x625 -> 0x51A) */
 	for (;;) {                                               /* 0x626 label_197 */
 		cost_ms(1.5);
-		if ((g.sick & 8) || g.call_discipline) {             /* doente ou pedindo disciplina: recusa */
+		if ((g.sick & 8) || g.call_discipline) {             /* sick or asking for discipline: refuses */
 			play_overlay_anim(6, 5, 0);                      /* 0x61E label_194 */
-			return;                                          /* -> 0x51A (cursor mantido) */
+			return;                                          /* -> 0x51A (cursor kept) */
 		}
 		g.anim_set = 5;
 		reset_pet_animation();
@@ -220,12 +220,12 @@ void menu_game(void)
 		draw_pet_overlays();
 		{
 			static const u8 hearts[8] = { 0xFF, 0x1C, 0xFF, 0x1C, 0x1D, 0xFF, 0x1D, 0xFF };
-			play_sound(0xD6, 0, 0xF);                        /* abertura */
+			play_sound(0xD6, 0, 0xF);                        /* opening */
 			draw_tile_page(hearts);
 		}
 		lcd_present();
 		wait_ticks(0x0D);
-		scroll_view_left(0xC);                               /* 0x500: rola da tela de corações até o pet */
+		scroll_view_left(0xC);                               /* 0x500: scrolls from the hearts screen to the pet */
 		g.game_rounds = 5;
 		g.game_wins = 0;
 		do {
@@ -233,7 +233,7 @@ void menu_game(void)
 			cost_ms(0.5);
 		} while (--g.game_rounds);
 
-		/* resultado: "pet ♡  acertos VS erros" (0xCF5 init_result_tiles) */
+		/* result: "pet ♡  hits VS misses" (0xCF5 init_result_tiles) */
 		{
 			u8 t[8] = { 0x18, 0xFF, 0x1D, 0xFF, 0x00, 0x0F, 0x00, 0xFF };
 			cost_ms(2);
@@ -248,7 +248,7 @@ void menu_game(void)
 		if (g.game_wins >= 3) { add_happy_heart(); win_feedback(); }
 		else lose_feedback();
 
-		/* 0x6B6 label_206: −1 oz (BCD), dentro dos limites da espécie */
+		/* 0x6B6 label_206: −1 oz (BCD), within the species' limits */
 		g.weight = (g.weight & 0xF) ? g.weight - 1 : (g.weight ? g.weight - 0x07 : 0x99);
 		clamp_weight();
 		if (g.btn_pressed & BTN_R) goto out;

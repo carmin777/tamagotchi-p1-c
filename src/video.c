@@ -1,4 +1,4 @@
-/* Buffer de vídeo, sprites/tiles da ROM, LCD e ícones. */
+/* Video buffer, sprites/tiles from the ROM, LCD and icons. */
 #include <string.h>
 #include "tama.h"
 
@@ -43,7 +43,7 @@ u8 draw_tile(u8 at, u8 tile)          /* 0x7A5 misc_render */
 	return draw_rom_bitmap(at, 0x1600 + 8 * tile);
 }
 
-/* 0x792 render_tile_list: 8 tiles, 4 na faixa de cima e 4 na de baixo (+0x40 nibbles) */
+/* 0x792 render_tile_list: 8 tiles, 4 in the upper strip and 4 in the lower one (+0x40 nibbles) */
 void render_tile_list(u8 at, const u8 *tiles)
 {
 	int i;
@@ -54,7 +54,7 @@ void render_tile_list(u8 at, const u8 *tiles)
 	}
 }
 
-/* 0x056: copia a janela de 32 colunas (a partir de g.view) para o LCD */
+/* 0x056: copies the 32-column window (starting at g.view) to the LCD */
 void lcd_present(void)
 {
 	int x, y;
@@ -75,7 +75,7 @@ void write_icons(void)
 	front_lcd_changed();
 }
 
-/* 0x7C0 set_menu_icon: acende o ícone do cursor (1..8) e o de "atenção" */
+/* 0x7C0 set_menu_icon: lights the cursor icon (1..8) and the "attention" one */
 void set_menu_icon(u8 icon)
 {
 	cost_ms(10.4);
@@ -90,7 +90,7 @@ void set_menu_icon(u8 icon)
 
 void view_to_right(void) { g.view = 0x40; }   /* 0x0CE label_30 */
 
-/* 0x500: rola a janela para a esquerda, passo de (16-step) nibbles, até passar de 0 */
+/* 0x500: scrolls the window to the left, in steps of (16-step) nibbles, until it passes 0 */
 void scroll_view_left(u8 step)
 {
 	unsigned lo, hi;
@@ -104,7 +104,7 @@ void scroll_view_left(u8 step)
 	} while (hi > 15);
 }
 
-/* 0xAF0 blit_buffer_slide: rola para a direita a partir de 0 até o nibble alto chegar a limit_hi */
+/* 0xAF0 blit_buffer_slide: scrolls to the right from 0 until the high nibble reaches limit_hi */
 void scroll_view_right(u8 limit_hi, u8 step)
 {
 	g.view = 0;

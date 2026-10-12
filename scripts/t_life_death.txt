@@ -1,8 +1,8 @@
-# t_life_death.txt - boot, 08:00, ovo, Babytchi sem cuidados adoece (~3310 s) e evolui para
-# Marutchi; doente por 0x160 min => morte (~24430 s): animação, lápide, R mostra a idade,
-# R volta, L+R segurados = soft reset (novo ovo, relógio mantido).
+# t_life_death.txt - boot, 08:00, egg, the uncared-for Babytchi falls sick (~3310 s) and evolves into
+# Marutchi; sick for 0x160 min => death (~24430 s): animation, tombstone, R shows the age,
+# R goes back, L+R held = soft reset (new egg, clock kept).
 wait 4
-press M           # ajuste do relogio
+press M           # clock setting
 wait 2.3
 press L
 press L
@@ -12,30 +12,30 @@ press L
 press L
 press L
 press L           # 08:00 AM
-press R           # confirma
+press R           # confirm
 wait 3.3
-press M           # tela do pet (ovo)
-mark ovo
+press M           # pet screen (egg)
+mark egg
 wait 24380
-dump antes
-mark morte        # evento 6 em ~24430 s; 6 animações de 10 s; lápide em ~24492 s
+dump before
+mark death        # event 6 at ~24430 s; 6 animations of 10 s; tombstone at ~24492 s
 wait 110.3
-mark lapide
-press R           # mostra a idade
+mark tombstone
+press R           # shows the age
 wait 3
-press R           # volta à lápide
+press R           # back to the tombstone
 wait 3
-wait 0.4          # (longe da virada do segundo: o reset para o relógio por ~0,2 s)
+wait 0.4          # (away from the turn of the second: the reset stops the clock for ~0.2 s)
 mark reset
-down L            # L+R segurados => soft reset
+down L            # L+R held => soft reset
 wait 0.2
 down R
 wait 1
 up L
 up R
 wait 4
-dump depois       # novo ovo, relógio mantido
-press M           # vai ao relógio
+dump after       # new egg, clock kept
+press M           # goes to the clock
 wait 4
-press M           # volta ao pet
+press M           # back to the pet
 wait 5

@@ -13,10 +13,10 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
-      - name: Baixar SDL2
+      - name: Download SDL2
         run: |
           curl -sL https://github.com/libsdl-org/SDL/releases/download/release-$SDL_VERSION/SDL2-$SDL_VERSION.tar.gz | tar xz
-      - name: Montar o projeto Gradle
+      - name: Assemble the Gradle project
         run: |
           P=$PWD/build-android
           cp -r SDL2-$SDL_VERSION/android-project $P
@@ -32,14 +32,14 @@ jobs:
           NDKV=$(ls $ANDROID_SDK_ROOT/ndk | sort -V | tail -1)
           sed -i "s/namespace \"org.libsdl.app\"/namespace \"org.tamap1.game\"/; s/versionName \"1.0\"/versionName \"1.0\"\n        applicationId \"org.tamap1.game\"/; s/compileSdkVersion 34/compileSdkVersion 34\n    ndkVersion \"$NDKV\"/; s/abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64'/abiFilters 'armeabi-v7a', 'arm64-v8a'/" $P/app/build.gradle
           sed -i 's/^APP_ABI.*/APP_ABI := armeabi-v7a arm64-v8a/' $P/app/jni/Application.mk
-      - name: Compilar APK
+      - name: Build APK
         working-directory: build-android
         run: ./gradlew --no-daemon assembleDebug
       - uses: actions/upload-artifact@v4
         with:
           name: tamagotchi-p1-android
           path: build-android/app/build/outputs/apk/debug/app-debug.apk
-      - name: Anexar à Release
+      - name: Attach to the Release
         if: startsWith(github.ref, 'refs/tags/v')
         env:
           GH_TOKEN: ${{ github.token }}

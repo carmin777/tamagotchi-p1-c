@@ -1,7 +1,7 @@
-# t_care_medicine.txt - bebe: remedio sem doenca (recusa); ~45 lanches derrubam o contador de
-# doenca (0x20D) (antes, 4 refeicoes evitam chamados); doente: 2 doses curam; 3a dose recusada.
+# t_care_medicine.txt - baby: medicine when not sick (refuses); ~45 snacks bring down the
+# sickness counter (0x20D) (before, 4 meals avoid calls); sick: 2 doses cure; 3rd dose refused.
 wait 4
-press M           # ajuste do relogio
+press M           # clock setting
 wait 2.3
 press L
 press L
@@ -11,25 +11,25 @@ press L
 press L
 press L
 press L           # 08:00 AM
-press R           # confirma
+press R           # confirm
 wait 3.3
-press M           # tela do pet (ovo)
-mark ovo
-wait 330          # ovo choca ~5 min depois de o relogio andar
+press M           # pet screen (egg)
+mark egg
+wait 330          # egg hatches ~5 min after the clock starts running
 wait 10.55
-dump antes
+dump before
 press L
 press L
 press L
-press L           # icone remedio
-press M           # sem doenca: recusa
-mark recusa
+press L           # medicine icon
+press M           # not sick: refuses
+mark refusal
 wait 6.0
-dump recusa
-press R           # volta ao icone 0
-press L           # comida
-press M           # seletor
-press M           # 4 refeicoes: fome cheia (sem chamados durante os lanches)
+dump refusal
+press R           # back to icon 0
+press L           # food
+press M           # selector
+press M           # 4 meals: hunger full (no calls during the snacks)
 wait 6.0
 press M
 wait 6.0
@@ -37,112 +37,112 @@ press M
 wait 6.0
 press M
 wait 6.0
-press L           # -> lanche
-press M           # lanche 1
+press L           # -> snack
+press M           # snack 1
 wait 6.0
-press M           # lanche 2
+press M           # snack 2
 wait 6.0
-press M           # lanche 3
+press M           # snack 3
 wait 6.0
-press M           # lanche 4
+press M           # snack 4
 wait 6.0
-press M           # lanche 5
+press M           # snack 5
 wait 6.0
-press M           # lanche 6
+press M           # snack 6
 wait 6.0
-press M           # lanche 7
+press M           # snack 7
 wait 6.0
-press M           # lanche 8
+press M           # snack 8
 wait 6.0
-press M           # lanche 9
+press M           # snack 9
 wait 6.0
-press M           # lanche 10
+press M           # snack 10
 wait 6.0
-press M           # lanche 11
+press M           # snack 11
 wait 6.0
-dump lanche11
-press M           # lanche 12
+dump snack11
+press M           # snack 12
 wait 6.0
-press M           # lanche 13
+press M           # snack 13
 wait 6.0
-press M           # lanche 14
+press M           # snack 14
 wait 6.0
-press M           # lanche 15
+press M           # snack 15
 wait 6.0
-press M           # lanche 16
+press M           # snack 16
 wait 6.0
-press M           # lanche 17
+press M           # snack 17
 wait 6.0
-press M           # lanche 18
+press M           # snack 18
 wait 6.0
-press M           # lanche 19
+press M           # snack 19
 wait 6.0
-press M           # lanche 20
+press M           # snack 20
 wait 6.0
-press M           # lanche 21
+press M           # snack 21
 wait 6.0
-press M           # lanche 22
+press M           # snack 22
 wait 6.0
-dump lanche22
-press M           # lanche 23
+dump snack22
+press M           # snack 23
 wait 6.0
-press M           # lanche 24
+press M           # snack 24
 wait 6.0
-press M           # lanche 25
+press M           # snack 25
 wait 6.0
-press M           # lanche 26
+press M           # snack 26
 wait 6.0
-press M           # lanche 27
+press M           # snack 27
 wait 6.0
-press M           # lanche 28
+press M           # snack 28
 wait 6.0
-press M           # lanche 29
+press M           # snack 29
 wait 6.0
-press M           # lanche 30
+press M           # snack 30
 wait 6.0
-press M           # lanche 31
+press M           # snack 31
 wait 6.0
-press M           # lanche 32
+press M           # snack 32
 wait 6.0
-press M           # lanche 33
+press M           # snack 33
 wait 6.0
-dump lanche33
-press M           # lanche 34
+dump snack33
+press M           # snack 34
 wait 6.0
-press M           # lanche 35
+press M           # snack 35
 wait 6.0
-press M           # lanche 36
+press M           # snack 36
 wait 6.0
-press M           # lanche 37
+press M           # snack 37
 wait 6.0
-press M           # lanche 38
+press M           # snack 38
 wait 6.0
-press M           # lanche 39
+press M           # snack 39
 wait 6.0
-press M           # lanche 40
+press M           # snack 40
 wait 6.0
-press M           # lanche 41
+press M           # snack 41
 wait 6.0
-press M           # lanche 42
+press M           # snack 42
 wait 6.0
-press M           # lanche 43
+press M           # snack 43
 wait 6.0
-press M           # lanche 44
+press M           # snack 44
 wait 6.0
-dump lanche44
-press R           # sai do seletor (volta ao icone comida)
+dump snack44
+press R           # leaves the selector (back to the food icon)
 wait 1
-dump doente
+dump sick
 press L
 press L
-press L           # icone remedio
+press L           # medicine icon
 press M           # dose 1
 mark dose1
 wait 6.0
 dump dose1
-press M           # dose 2: cura
+press M           # dose 2: cures
 wait 6.0
 dump dose2
-press M           # sem doenca: recusa
+press M           # not sick: refuses
 wait 6.0
-dump fim
+dump end

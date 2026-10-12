@@ -1,4 +1,4 @@
-/* Partida, acerto do relógio, tela do relógio e tela do pet. */
+/* Start-up, clock setting, clock screen and pet screen. */
 #include <string.h>
 #include <setjmp.h>
 #include <stdio.h>
@@ -8,30 +8,30 @@
 void prog_timer_start(void);
 jmp_buf soft_reset_point;
 
-/* 0x5E3 hour24_to_12h: tabela 0x15E6 (BCD; bit3 do nibble alto = PM). Hora inválida => 0 */
+/* 0x5E3 hour24_to_12h: table 0x15E6 (BCD; bit3 of the high nibble = PM). Invalid hour => 0 */
 static u8 hour_12h(u8 hour) { return hour < 24 ? rom_byte(0x15E6 + hour) : 0; }
 
-/* 0x5F3 / 0x5EF: dígitos grande e pequeno (página 0x15, 4 colunas cada) */
+/* 0x5F3 / 0x5EF: large and small digits (page 0x15, 4 columns each) */
 static u8 glyph_big(u8 at, u8 d) { return draw_rom_bitmap(at, 0x1500 + 4 * d); }
 static u8 glyph_small(u8 at, u8 d) { return draw_rom_bitmap(at, 0x1500 + 4 * (d + 10)); }
 
 static u8 put(u8 at, u8 nib) { vram[at] = nib; return at + 1; }
 
-/* 0x5A6: hh:mm ss na vram a partir de g.draw_at (normalmente 0xC4). Devolve os segundos
- * do retrato (M[4]/M[5]), que a tela do relógio usa para a barra */
+/* 0x5A6: hh:mm ss in the vram starting at g.draw_at (normally 0xC4). Returns the seconds
+ * of the snapshot (M[4]/M[5]), which the clock screen uses for the bar */
 u8 draw_clock(void)
 {
 	u8 sec, min, h12, at;
 
 	cost_ms(3);
 	g.clock_dirty = 0;
-	sec = g.sec; min = g.min;              /* retrato atômico (interrupções desligadas) */
+	sec = g.sec; min = g.min;              /* atomic snapshot (interrupts off) */
 	h12 = hour_12h(g.hour);
 	cost_ms(14);
 
-	at = draw_tile(g.draw_at, 0xA + ((h12 >> 7) & 1));   /* "AM"/"PM" vertical */
+	at = draw_tile(g.draw_at, 0xA + ((h12 >> 7) & 1));   /* vertical "AM"/"PM" */
 	vram_clear_range(at, 16); at += 16;
-	at += 0x60;                                             /* metade de cima */
+	at += 0x60;                                             /* upper half */
 	if (NIB(h12, 1) & 3) at = glyph_big(at, NIB(h12, 1) & 3);
 	else { vram_clear_range(at, 8); at += 8; }
 	at = put(at, 0); at = put(at, 0);
@@ -58,27 +58,27 @@ static void draw_clock_screen(void)
 	lcd_present();
 }
 
-/* ---------------------------------------------------------------- partida */
+/* ---------------------------------------------------------------- start-up */
 
-/* 0x11E0 set_init_mem_and_int: zera a RAM e põe os valores de fábrica */
+/* 0x11E0 set_init_mem_and_int: clears the RAM and sets the factory values */
 static void init_mem_and_int(void)
 {
 	memset(&g, 0, sizeof(g));
 	memset(vram, 0, sizeof(vram));
-	g.hour = 0x20;                 /* >= 24: relógio não acertado */
+	g.hour = 0x20;                 /* >= 24: clock not set */
 	g.snd_ptr = SND_IDLE;
 	g.snd_rep_lo = g.snd_rep_hi = 0xF;
 	g.sound_on = 0xF;
 	g.clock_running = 0;
 	g.skippable = 0;
-	g.egg = 5;                     /* ovo: 5 minutos */
-	cost_ms(67);                   /* limpar ~400 nibbles de RAM/VRAM e programar o I/O */
-	prog_timer_start();            /* F78=1: no boot a frio isso acontece em t ~ 0,097 s */
+	g.egg = 5;                     /* egg: 5 minutes */
+	cost_ms(67);                   /* clear ~400 nibbles of RAM/VRAM and program the I/O */
+	prog_timer_start();            /* F78=1: on a cold boot this happens at t ~ 0.097 s */
 }
 
 static enum screen set_clock_screen(void);
 
-/* Telas ligadas por "jp" no original: cada uma devolve a próxima */
+/* Screens linked by "jp" in the original: each one returns the next */
 static enum screen run_screen(enum screen s)
 {
 	switch (s) {
@@ -98,16 +98,16 @@ void game_main(void)
 	u8 k0;
 
 	cost_ms(30);
-	k0 = front_buttons & 7;                   /* 0x235: M[0x270] = K0 cru */
+	k0 = front_buttons & 7;                   /* 0x235: M[0x270] = raw K0 */
 	init_mem_and_int();
 	cost_ms(25);
 	play_sound(SND_BOOT, 0, 0xF);
-	if (k0 == BTN_L) factory_lcd_test();      /* 0x23E: só L segurado */
+	if (k0 == BTN_L) factory_lcd_test();      /* 0x23E: only L held */
 	s = setjmp(soft_reset_point) ? SCR_PET_MENU : SCR_BOOT_WAIT;   /* soft_reset -> 0x517 */
 	for (;;) s = run_screen(s);
 }
 
-/* 0x97F: ovo parado esperando o botão M para acertar o relógio */
+/* 0x97F: idle egg waiting for button M to set the clock */
 enum screen boot_wait_for_start(void)
 {
 	init_new_game_state();
@@ -121,7 +121,7 @@ enum screen boot_wait_for_start(void)
 	}
 }
 
-/* 0x553: acerto do relógio. L = +1 h, M = +1 min, R = confirma */
+/* 0x553: clock setting. L = +1 h, M = +1 min, R = confirm */
 static enum screen set_clock_screen(void)
 {
 	play_beep();
@@ -130,9 +130,9 @@ static enum screen set_clock_screen(void)
 	draw_tile(draw_tile(0xE0, 0x0C), 0x0D);   /* "SET" */
 	g.clock_running = 0;
 	g.sec = 0;
-	g.rep_mask = BTN_M | BTN_L;               /* M e L repetem se segurados */
+	g.rep_mask = BTN_M | BTN_L;               /* M and L repeat when held */
 	draw_clock_screen();
-	do read_buttons(); while (g.btn_held);    /* espera soltar tudo */
+	do read_buttons(); while (g.btn_held);    /* wait for everything to be released */
 	for (;;) {
 		draw_clock_screen();
 		for (;;) {
@@ -144,13 +144,13 @@ static enum screen set_clock_screen(void)
 				g.clock_running = 0xF;
 				return SCR_CLOCK;
 			}
-			if (g.btn_pressed & BTN_M) {      /* +1 minuto (sem levar para a hora) */
+			if (g.btn_pressed & BTN_M) {      /* +1 minute (without carrying into the hour) */
 				play_beep();
 				g.min = ((g.min & 0xF) == 9) ? (g.min & 0xF0) + 0x10 : g.min + 1;
 				if (g.min >= 0x60) g.min = 0;
 				g.clock_dirty = 0xF;
 			}
-			if (g.btn_pressed & BTN_L) {      /* +1 hora */
+			if (g.btn_pressed & BTN_L) {      /* +1 hour */
 				u8 h = g.hour & 0x1F;
 				play_beep();
 				g.hour = (h + 1 >= 24) ? 0 : h + 1;
@@ -161,9 +161,9 @@ static enum screen set_clock_screen(void)
 	}
 }
 
-/* ---------------------------------------------------------------- relógio */
+/* ---------------------------------------------------------------- clock */
 
-/* 0x293: tela do relógio. M = vai ao pet, L+R = acertar */
+/* 0x293: clock screen. M = go to the pet, L+R = set */
 enum screen clock_screen(void)
 {
 	for (;;) {
@@ -175,7 +175,7 @@ enum screen clock_screen(void)
 			view_to_right();
 			g.draw_at = 0xC4;
 			s = NIB(draw_clock(), 0);
-			/* barra de 5 setas que avança com os segundos */
+			/* 5-arrow bar that advances with the seconds */
 			if (s >= 6) s += 3;
 			for (i = 0, g.draw_at = 0xE2; i < 5; i++) {
 				s = (s - 1) & 0xF;
@@ -200,19 +200,19 @@ enum screen clock_screen(void)
 
 /* ---------------------------------------------------------------- pet */
 
-/* 0x4E7: botão M sem ícone: rola para o relógio */
+/* 0x4E7: button M without an icon: scrolls to the clock */
 static enum screen enter_clock_screen_from_pet(void)
 {
 	vram_clear_range(0x40, 64);
 	vram_clear_range(0xC0, 64);
 	g.draw_at = 0xC4;
 	draw_clock();
-	vram_clear_range(0x70, 16);               /* sem os segundos durante a rolagem */
+	vram_clear_range(0x70, 16);               /* without the seconds during the scroll */
 	scroll_view_right(4, 4);
 	return SCR_CLOCK;
 }
 
-/* 0x508: monta a tela do pet e rola até ela; depois o laço do menu (0x512) */
+/* 0x508: builds the pet screen and scrolls to it; then the menu loop (0x512) */
 enum screen pet_screen(void)
 {
 	play_beep();
@@ -226,7 +226,7 @@ enum screen pet_screen(void)
 	return pet_menu_loop();
 }
 
-/* 0x512: laço do menu do pet (soft_reset entra aqui, em 0x517, com o ovo ainda em 5) */
+/* 0x512: pet menu loop (soft_reset enters here, at 0x517, with the egg still at 5) */
 enum screen pet_menu_loop(void)
 {
 	for (;;) {
@@ -238,7 +238,7 @@ menu:
 		set_menu_icon(g.menu_saved);
 		for (;;) {
 			int r;
-			cost_ms(13);                                 /* instruções do próprio laço */
+			cost_ms(13);                                 /* instructions of the loop itself */
 			if (g.egg == 0) break;
 			if (check_events()) {
 				dispatch_event();
@@ -247,7 +247,7 @@ menu:
 			}
 			r = menu_poll();
 			if (g.btn_held == (BTN_L | BTN_R) && (g.btn_pressed & (BTN_L | BTN_R))) {
-				g.sound_on ^= 0xF;                       /* 0x54D: liga/desliga o som */
+				g.sound_on ^= 0xF;                       /* 0x54D: sound on/off */
 				g.snd_dur = 0; g.snd_ptr = SND_TOGGLE;
 				g.snd_rep_lo = g.cursor; g.snd_rep_hi = 0xF;
 				g.menu_saved = 0;
@@ -268,8 +268,8 @@ menu:
 	}
 }
 
-/* Retoma um jogo salvo (front_sdl.c): o original não tem isso — o estado volta e o jogo
- * continua na tela do pet, como depois de um evento. */
+/* Resumes a saved game (front_sdl.c): the original has no such thing — the state comes back and the game
+ * continues on the pet screen, as after an event. */
 void game_resume(void)
 {
 	volatile enum screen s = SCR_PET;

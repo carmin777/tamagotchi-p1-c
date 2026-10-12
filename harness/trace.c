@@ -1,25 +1,25 @@
 /*
- * trace - emulador headless do Tamagotchi P1 para engenharia reversa.
+ * trace - headless Tamagotchi P1 emulator for reverse engineering.
  *
- * Roda o TamaLIB com tempo virtual (o mais rápido possível, determinístico),
- * input vindo de um script, e grava:
- *   frames.txt  - cada frame do LCD que mudou (32x16 + 8 ícones), com o tempo
- *   writes.tsv  - escritas na RAM (t_ms pc addr old new), só quando o valor muda
- *   cov.bin     - contagem de execuções por PC (u32 x 0x2000)
- *   ram.txt     - dumps de RAM pedidos pelo script (comando "dump")
- *   -C          - grava frames só ao fim de cada cópia p/ VRAM / escrita de ícones
- *   -P 0xADDR   - (repetível) perfil de tempo emulado por chamada à rotina em ADDR (até retornar)
+ * Runs TamaLIB with virtual time (as fast as possible, deterministic),
+ * input coming from a script, and writes:
+ *   frames.txt  - every LCD frame that changed (32x16 + 8 icons), with the time
+ *   writes.tsv  - RAM writes (t_ms pc addr old new), only when the value changes
+ *   cov.bin     - execution count per PC (u32 x 0x2000)
+ *   ram.txt     - RAM dumps requested by the script ("dump" command)
+ *   -C          - writes frames only at the end of each VRAM copy / icon write
+ *   -P 0xADDR   - (repeatable) profile of emulated time per call to the routine at ADDR (until it returns)
  *
- * Script (uma linha por comando, '#' comenta):
- *   wait <seg>          avança o tempo emulado
- *   press <L|M|R>       aperta 0,15 s e solta, depois espera 0,35 s
- *   hold <L|M|R> <seg>  segura o botão pelo tempo dado
- *   down/up <L|M|R>     aperta / solta (sem avançar o tempo; p/ combinações como L+R)
- *   frame               força a gravação do frame atual
- *   dump [rótulo]       grava a RAM 0x000-0x2FF em ram.txt
- *   mark <texto>        escreve um marcador em frames.txt e writes.tsv
- *   save <arquivo>      salva o estado (formato TamaTool)
- *   load <arquivo>      carrega um estado (formato TamaTool)
+ * Script (one command per line, '#' starts a comment):
+ *   wait <sec>          advances the emulated time
+ *   press <L|M|R>       presses for 0.15 s and releases, then waits 0.35 s
+ *   hold <L|M|R> <sec>  holds the button for the given time
+ *   down/up <L|M|R>     press / release (without advancing time; for combinations such as L+R)
+ *   frame               forces the current frame to be written
+ *   dump [label]        writes RAM 0x000-0x2FF to ram.txt
+ *   mark <text>         writes a marker to frames.txt and writes.tsv
+ *   save <file>         saves the state (TamaTool format)
+ *   load <file>         loads a state (TamaTool format)
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -30,7 +30,7 @@
 #include "tamalib/tamalib.h"
 #include "state.h"
 
-#define TS_FREQ 32768ULL     /* timestamps em ticks do oscilador (exato: sem arredondar ciclos) */
+#define TS_FREQ 32768ULL     /* timestamps in oscillator ticks (exact: no rounding of cycles) */
 
 static timestamp_t now;
 static u8_t lcd[16][32], icons[8];
@@ -40,17 +40,17 @@ static u32_t snd_freq_dhz;
 static int snd_on = -1, snd_logged_freq = -1;
 static u32_t cov[0x2000];
 static int log_writes = 1, all_frames = 0, commit_frames = 0;
-/* -C: grava o frame só quando a cópia para a VRAM (0x056) ou a escrita de ícones (0x7E1)
- * termina — os mesmos pontos em que a reescrita apresenta um quadro */
+/* -C: writes the frame only when the VRAM copy (0x056) or the icon write (0x7E1)
+ * ends — the same points at which the rewrite presents a frame */
 static int commit_active[2];
 static u32_t commit_depth[2];
 static const u13_t commit_addr[2] = { 0x056, 0x7E1 };
 
-/* Profiler: -P 0xADDR mede quanto tempo emulado cada chamada à rotina leva até retornar */
+/* Profiler: -P 0xADDR measures how much emulated time each call to the routine takes until it returns */
 #define MAX_PROF 32
 static struct { u13_t addr; int active; u32_t depth; timestamp_t t0, isr0; unsigned long n; double sum, min, max, pure; } prof[MAX_PROF];
 static int nprof;
-/* tempo acumulado dentro das ISRs (0x116 genérica, 0x11D clock, 0x16F prog) */
+/* time accumulated inside the ISRs (0x116 generic, 0x11D clock, 0x16F prog) */
 static timestamp_t isr_total, isr_t0;
 static int isr_active;
 static u32_t isr_depth;
@@ -71,7 +71,7 @@ static void hal_sleep_until(timestamp_t ts) { if (ts > now) now = ts; }
 static timestamp_t hal_get_timestamp(void) { return now; }
 static void hal_set_lcd_matrix(u8_t x, u8_t y, bool_t v) { lcd[y][x] = v; }
 static void hal_set_lcd_icon(u8_t i, bool_t v) { icons[i] = v; }
-/* snd.txt: mudanças do buzzer (tempo, liga/desliga, índice de frequência 0-7) */
+/* snd.txt: buzzer changes (time, on/off, frequency index 0-7) */
 static void log_snd(void)
 {
 	static const u32_t dhz[8] = { 40960, 32768, 27307, 23406, 20480, 16384, 13653, 11703 };
@@ -154,7 +154,7 @@ static hal_t hal = {
 	.handler = hal_handler,
 };
 
-/* Roda até o tempo emulado alcançar 'until', atualizando a tela a 30 fps */
+/* Runs until the emulated time reaches 'until', updating the screen at 30 fps */
 static void run_until(timestamp_t until)
 {
 	static timestamp_t screen_ts;
@@ -177,7 +177,7 @@ static int parse_btn(const char *s)
 	case 'M': case 'm': return BTN_MIDDLE;
 	case 'R': case 'r': return BTN_RIGHT;
 	}
-	fprintf(stderr, "botão inválido: %s\n", s);
+	fprintf(stderr, "invalid button: %s\n", s);
 	exit(1);
 }
 
@@ -219,7 +219,7 @@ static void run_script(FILE *f)
 			tamalib_set_button(b, BTN_STATE_PRESSED);
 			run_for(atof(a2));
 			tamalib_set_button(b, BTN_STATE_RELEASED);
-		} else if (!strcmp(cmd, "down")) {        /* segura até "up" (p/ combinações, ex. L+R) */
+		} else if (!strcmp(cmd, "down")) {        /* holds until "up" (for combinations, e.g. L+R) */
 			tamalib_set_button(parse_btn(a1), BTN_STATE_PRESSED);
 		} else if (!strcmp(cmd, "up")) {
 			tamalib_set_button(parse_btn(a1), BTN_STATE_RELEASED);
@@ -288,7 +288,7 @@ int main(int argc, char **argv)
 		case 'C': commit_frames = 1; break;
 		case 'P': if (nprof < MAX_PROF) prof[nprof++].addr = strtol(optarg, NULL, 0); break;
 		default:
-			fprintf(stderr, "uso: %s [-r rom] [-s script|-] [-o dir] [-l save] [-W sem writes] [-F todo frame]\n", argv[0]);
+			fprintf(stderr, "usage: %s [-r rom] [-s script|-] [-o dir] [-l save] [-W no writes] [-F every frame]\n", argv[0]);
 			return 1;
 		}
 	}
@@ -315,7 +315,7 @@ int main(int argc, char **argv)
 		fclose(fc);
 	}
 	for (opt = 0; opt < nprof; opt++)
-		fprintf(stderr, "prof %04X: n=%lu média=%.2f ms min=%.2f max=%.2f  puro=%.2f ms\n", prof[opt].addr, prof[opt].n,
+		fprintf(stderr, "prof %04X: n=%lu avg=%.2f ms min=%.2f max=%.2f  pure=%.2f ms\n", prof[opt].addr, prof[opt].n,
 			prof[opt].n ? prof[opt].sum / prof[opt].n : 0, prof[opt].min, prof[opt].max,
 			prof[opt].n ? prof[opt].pure / prof[opt].n : 0);
 	fclose(f_frames);

@@ -1,12 +1,12 @@
 /*
- * Front-end jogável (SDL2): LCD, ícones, buzzer e teclado em tempo real.
+ * Playable front end (SDL2): LCD, icons, buzzer and keyboard in real time.
  *
- * Teclas: ← ou A = botão L (seleciona), ↓ ou S = M (confirma), → ou D = R (cancela).
- *         F = alterna velocidade 1x / 10x.  Fechar a janela salva o jogo.
- * O jogo salvo fica na pasta de preferências do SDL (Linux: ~/.local/share/tamagotchi-p1/save.bin;
- * Windows: %APPDATA%\tamagotchi-p1\save.bin) ou em -S arquivo. Com o
- * aplicativo fechado o tempo do pet para (como no TamaTool), já que o original não
- * tem relógio de tempo real fora do CPU.
+ * Keys: ← or A = button L (select), ↓ or S = M (confirm), → or D = R (cancel).
+ *         F = toggles speed 1x / 10x.  Closing the window saves the game.
+ * The saved game lives in SDL's preferences folder (Linux: ~/.local/share/tamagotchi-p1/save.bin;
+ * Windows: %APPDATA%\tamagotchi-p1\save.bin) or in -S file. While the
+ * application is closed the pet's time stands still (as in TamaTool), since the original has no
+ * real-time clock outside the CPU.
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -21,7 +21,7 @@
 #endif
 #include "tama.h"
 
-#define PIXEL 12                 /* tamanho do pixel do LCD na tela */
+#define PIXEL 12                 /* size of an LCD pixel on screen */
 #define ICON 48
 #define MARGIN 16
 #define LCD_W (32 * PIXEL)
@@ -29,7 +29,7 @@
 #define WIN_W (LCD_W + 2 * MARGIN)
 #define BASE_H (LCD_H + 2 * ICON + 4 * MARGIN)
 #ifdef __ANDROID__
-#define PAD_H 160                /* faixa dos 3 botões de toque abaixo do LCD */
+#define PAD_H 160                /* strip with the 3 touch buttons below the LCD */
 #else
 #define PAD_H 0
 #endif
@@ -41,14 +41,14 @@ static SDL_Window *win;
 static SDL_Renderer *ren;
 static SDL_Texture *icons_tex;
 static bool dirty = true;
-static double wall0, emu0;       /* sincronia: wall0 (s) corresponde a emu0 (s emulado) */
+static double wall0, emu0;       /* sync: wall0 (s) corresponds to emu0 (emulated s) */
 static int speed = 1;
 static char save_path[1024];
 static volatile sig_atomic_t want_quit;
 
 static void on_signal(int sig) { (void) sig; want_quit = 1; }
 
-/* ---- som: onda quadrada na frequência do buzzer ---- */
+/* ---- sound: square wave at the buzzer frequency ---- */
 static SDL_AudioDeviceID audio;
 static volatile int buzz_on, buzz_hz;
 static double phase;
@@ -70,7 +70,7 @@ static void audio_cb(void *u, Uint8 *stream, int len)
 	}
 }
 
-/* frequências do buzzer do E0C6S46 (registrador F74, valores 0..7) */
+/* E0C6S46 buzzer frequencies (register F74, values 0..7) */
 static const int buzzer_hz[8] = { 4096, 3277, 2731, 2341, 2048, 1638, 1365, 1170 };
 
 void front_set_buzzer(bool on, u8 freq)
@@ -84,7 +84,7 @@ void front_lcd_changed(void) { dirty = true; }
 static double wall(void) { return SDL_GetPerformanceCounter() / (double) SDL_GetPerformanceFrequency(); }
 
 #ifdef __ANDROID__
-/* toque: cada dedo acende o botão sob ele (faixa PAD_H, em coordenadas lógicas) */
+/* touch: each finger lights the button under it (PAD_H strip, in logical coordinates) */
 static struct { SDL_FingerID id; u8 mask; bool used; } fingers[10];
 
 static u8 touch_buttons(void)
@@ -124,7 +124,7 @@ static void render(void)
 	SDL_Rect r;
 	int x, y, i;
 
-	SDL_SetRenderDrawColor(ren, 0xC8, 0xD0, 0xB0, 255);   /* fundo do LCD */
+	SDL_SetRenderDrawColor(ren, 0xC8, 0xD0, 0xB0, 255);   /* LCD background */
 	SDL_RenderClear(ren);
 	for (i = 0; i < 8; i++) {
 		SDL_Rect d = { MARGIN + (i % 4) * (LCD_W / 4) + (LCD_W / 4 - ICON) / 2,
@@ -150,11 +150,11 @@ static void render(void)
 #ifdef __ANDROID__
 	for (i = 0; i < 3; i++) {
 		SDL_Rect b = { MARGIN + i * (WIN_W - 2 * MARGIN) / 3 + 8, BASE_H + 12, (WIN_W - 2 * MARGIN) / 3 - 16, PAD_H - 24 };
-		bool down = (touch_buttons() >> (2 - i)) & 1;       /* esquerda->direita = L, M, R */
+		bool down = (touch_buttons() >> (2 - i)) & 1;       /* left->right = L, M, R */
 		SDL_SetRenderDrawColor(ren, down ? 0xE8 : 0xB0, down ? 0x70 : 0x40, 0x40, 255);
 		SDL_RenderFillRect(ren, &b);
 		SDL_SetRenderDrawColor(ren, 0xFF, 0xFF, 0xFF, 255);
-		for (y = 0; y <= i; y++) {                           /* 1, 2 ou 3 pontos = A, B, C */
+		for (y = 0; y <= i; y++) {                           /* 1, 2 or 3 dots = A, B, C */
 			SDL_Rect d = { b.x + b.w / 2 - 10 * (i + 1) + 20 * y + 4, b.y + b.h / 2 - 8, 16, 16 };
 			SDL_RenderFillRect(ren, &d);
 		}
@@ -175,15 +175,15 @@ static u8 key_button(SDL_Keycode k)
 }
 
 #ifdef __EMSCRIPTEN__
-/* no navegador não há "fechar": salva a cada poucos segundos e quando a aba some;
- * syncfs persiste o sistema de arquivos (IDBFS) no IndexedDB */
+/* in the browser there is no "close": save every few seconds and when the tab goes away;
+ * syncfs persists the file system (IDBFS) into IndexedDB */
 EMSCRIPTEN_KEEPALIVE void tama_save(void)
 {
 	if (save_path[0] && machine_save(save_path))
 		EM_ASM(if (Module.persist) Module.persist(););
 }
 
-EMSCRIPTEN_KEEPALIVE void tama_button(int mask, int down)   /* botões na tela (toque) */
+EMSCRIPTEN_KEEPALIVE void tama_button(int mask, int down)   /* on-screen buttons (touch) */
 {
 	if (down) front_buttons |= mask; else front_buttons &= ~mask;
 }
@@ -192,7 +192,7 @@ EMSCRIPTEN_KEEPALIVE void tama_button(int mask, int down)   /* botões na tela (
 static void quit(void)
 {
 	if (save_path[0] && !machine_save(save_path))
-		fprintf(stderr, "não consegui salvar em %s\n", save_path);
+		fprintf(stderr, "could not save to %s\n", save_path);
 	SDL_Quit();
 	exit(0);
 }
@@ -207,10 +207,10 @@ void front_pump(double t)
 	{
 		static double last_save, last_yield;
 		if (wall() - last_save > 10) { last_save = wall(); tama_save(); }
-		if (wall() - last_yield > 0.016) { last_yield = wall(); emscripten_sleep(0); }  /* devolve o controle ao navegador */
+		if (wall() - last_yield > 0.016) { last_yield = wall(); emscripten_sleep(0); }  /* give control back to the browser */
 	}
 #endif
-	/* não deixa o tempo emulado passar à frente do relógio real */
+	/* do not let emulated time run ahead of the real clock */
 	for (;;) {
 		double ahead = (t - emu0) / speed - (wall() - wall0);
 		while (SDL_PollEvent(&e)) {
@@ -235,10 +235,10 @@ void front_pump(double t)
 		if (ahead <= 0.001) break;
 		SDL_Delay(ahead > 0.01 ? 10 : 1);
 	}
-	if (t - emu0 > 0 && wall() - wall0 > 0.5 + (t - emu0) / speed) { wall0 = wall(); emu0 = t; }  /* atrasou: não acelera depois */
+	if (t - emu0 > 0 && wall() - wall0 > 0.5 + (t - emu0) / speed) { wall0 = wall(); emu0 = t; }  /* fell behind: do not speed up afterwards */
 }
 
-/* guarda uma cópia da ROM na pasta de preferências: nas próximas vezes abre direto */
+/* keep a copy of the ROM in the preferences folder: next runs start directly */
 static void remember_rom(const char *src, const char *pref)
 {
 	char dst[1100], buf[4096];
@@ -254,18 +254,18 @@ static void remember_rom(const char *src, const char *pref)
 	fclose(in);
 }
 
-/* sem ROM: janela com uma seta e o título pedindo para arrastar o tama.b para cima dela */
+/* no ROM: window with an arrow and a title asking to drag tama.b onto it */
 static void wait_for_rom_drop(const char *pref)
 {
 	SDL_Event e;
 	int x;
 
-	SDL_SetWindowTitle(win, "Tamagotchi P1 - arraste o arquivo tama.b para esta janela");
+	SDL_SetWindowTitle(win, "Tamagotchi P1 - drag the tama.b file onto this window");
 	for (;;) {
 		SDL_SetRenderDrawColor(ren, 0xC8, 0xD0, 0xB0, 255);
 		SDL_RenderClear(ren);
 		SDL_SetRenderDrawColor(ren, 0x30, 0x34, 0x28, 255);
-		for (x = MARGIN; x < WIN_W - MARGIN; x += 24) {      /* borda tracejada */
+		for (x = MARGIN; x < WIN_W - MARGIN; x += 24) {      /* dashed border */
 			SDL_Rect t = { x, MARGIN, 12, 4 }, b = { x, WIN_H - MARGIN - 4, 12, 4 };
 			SDL_RenderFillRect(ren, &t); SDL_RenderFillRect(ren, &b);
 		}
@@ -273,7 +273,7 @@ static void wait_for_rom_drop(const char *pref)
 			SDL_Rect l = { MARGIN, x, 4, 12 }, r = { WIN_W - MARGIN - 4, x, 4, 12 };
 			SDL_RenderFillRect(ren, &l); SDL_RenderFillRect(ren, &r);
 		}
-		{   /* seta para baixo */
+		{   /* down arrow */
 			SDL_Rect shaft = { WIN_W / 2 - 14, WIN_H / 2 - 90, 28, 100 };
 			int k;
 			SDL_RenderFillRect(ren, &shaft);
@@ -290,7 +290,7 @@ static void wait_for_rom_drop(const char *pref)
 				SDL_SetWindowTitle(win, "Tamagotchi P1");
 				return;
 			}
-			SDL_SetWindowTitle(win, "Tamagotchi P1 - esse arquivo não é a ROM (tama.b, 12288 bytes); tente de novo");
+			SDL_SetWindowTitle(win, "Tamagotchi P1 - that file is not the ROM (tama.b, 12288 bytes); try again");
 			SDL_free(e.drop.file);
 		}
 	}
@@ -309,32 +309,32 @@ int main(int argc, char **argv)
 		else if (!strcmp(argv[i], "-S") && i + 1 < argc) snprintf(save_path, sizeof(save_path), "%s", argv[++i]);
 		else if (!strcmp(argv[i], "-i") && i + 1 < argc) res = argv[++i];
 		else if (!strcmp(argv[i], "-n")) fresh = true;
-		else if (argv[i][0] != '-') drop_arg = argv[i];       /* arrastou o tama.b sobre o .exe */
+		else if (argv[i][0] != '-') drop_arg = argv[i];       /* tama.b was dragged onto the .exe */
 		else {
-			fprintf(stderr, "uso: %s [-r rom] [-S save] [-i icones.png] [-n (novo jogo)]\n", argv[0]);
+			fprintf(stderr, "usage: %s [-r rom] [-S save] [-i icons.png] [-n (new game)] [tama.b]\n", argv[0]);
 			return 1;
 		}
 	}
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0) { fprintf(stderr, "SDL: %s\n", SDL_GetError()); return 1; }
-	pref = SDL_GetPrefPath("", "tamagotchi-p1");           /* cria a pasta se preciso */
-	if (rom) {                                              /* -r explícito: sem plano B */
-		if (!rom_load(rom)) { fprintf(stderr, "não consegui ler a ROM %s\n", rom); return 1; }
+	pref = SDL_GetPrefPath("", "tamagotchi-p1");           /* creates the folder if needed */
+	if (rom) {                                              /* explicit -r: no fallback */
+		if (!rom_load(rom)) { fprintf(stderr, "could not read the ROM %s\n", rom); return 1; }
 		have_rom = true;
 	} else {
 		char *base = SDL_GetBasePath();
 		char alt[1100];
 		const char *fixed[] = { drop_arg, getenv("TAMA_ROM"), "rom/tama.b", NULL };
 #ifdef __ANDROID__
-		snprintf(alt, sizeof(alt), "%s/tama.b", SDL_AndroidGetInternalStoragePath());   /* copiada pela PickActivity */
+		snprintf(alt, sizeof(alt), "%s/tama.b", SDL_AndroidGetInternalStoragePath());   /* copied by PickActivity */
 		have_rom = rom_load(alt);
 #endif
 		for (i = 0; !have_rom && i < 3; i++) if (fixed[i]) have_rom = rom_load(fixed[i]);
-		if (!have_rom && base) {   /* ao lado do executável (duplo clique no Windows) */
+		if (!have_rom && base) {   /* next to the executable (double click on Windows) */
 			snprintf(alt, sizeof(alt), "%srom/tama.b", base);
 			have_rom = rom_load(alt);
 			if (!have_rom) { snprintf(alt, sizeof(alt), "%stama.b", base); have_rom = rom_load(alt); }
 		}
-		if (!have_rom && pref) {   /* ROM lembrada de uma execução anterior */
+		if (!have_rom && pref) {   /* ROM remembered from a previous run */
 			snprintf(alt, sizeof(alt), "%stama.b", pref);
 			have_rom = rom_load(alt);
 		}
@@ -352,7 +352,7 @@ int main(int argc, char **argv)
 	if (!ren) ren = SDL_CreateRenderer(win, -1, 0);
 	SDL_SetRenderDrawBlendMode(ren, SDL_BLENDMODE_BLEND);
 #ifdef __ANDROID__
-	SDL_RenderSetLogicalSize(ren, WIN_W, WIN_H);       /* escala para a tela do aparelho */
+	SDL_RenderSetLogicalSize(ren, WIN_W, WIN_H);       /* scale to the device's screen */
 	SDL_SetHint(SDL_HINT_ANDROID_TRAP_BACK_BUTTON, "0");
 #endif
 #ifdef HAVE_SDL_IMAGE

@@ -6,7 +6,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: mymindstorm/setup-emsdk@v14
-      - name: Compilar (WebAssembly)
+      - name: Build (WebAssembly)
         run: make -C src wasm
       - uses: actions/upload-artifact@v4
         with:

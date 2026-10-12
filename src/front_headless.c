@@ -1,7 +1,7 @@
 /*
- * Front-end sem janela: roda o jogo com tempo virtual guiado por um script de input no
- * mesmo formato do harness/trace (wait/press/hold/mark/frame) e grava frames.txt no mesmo
- * formato, para comparar com o emulador de referência (tools/cmpframes.py).
+ * Windowless front end: runs the game with virtual time driven by an input script in the
+ * same format as harness/trace (wait/press/hold/mark/frame) and writes frames.txt in the same
+ * format, to compare with the reference emulator (tools/cmpframes.py).
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -37,7 +37,7 @@ static u8 parse_btn(const char *s)
 	case 'M': case 'm': return BTN_M;
 	case 'R': case 'r': return BTN_R;
 	}
-	fprintf(stderr, "botão inválido: %s\n", s);
+	fprintf(stderr, "invalid button: %s\n", s);
 	exit(1);
 }
 
@@ -70,8 +70,8 @@ static void load_script(FILE *f)
 		} else if (!strcmp(cmd, "frame")) add(t, EV_FRAME, 0, NULL);
 		else if (!strcmp(cmd, "dump")) add(t, EV_DUMP, 0, a1);
 		else if (!strcmp(cmd, "save") || !strcmp(cmd, "load"))
-			fprintf(stderr, "aviso: '%s' ignorado na reescrita\n", cmd);
-		else { fprintf(stderr, "comando desconhecido: %s\n", cmd); exit(1); }
+			fprintf(stderr, "warning: '%s' ignored in the rewrite\n", cmd);
+		else { fprintf(stderr, "unknown command: %s\n", cmd); exit(1); }
 	}
 	add(t, EV_END, 0, NULL);
 }
@@ -95,8 +95,8 @@ static void emit_frame(int force)
 
 void front_lcd_changed(void) { emit_frame(0); }
 
-/* Reconstrói a RAM do original (só os endereços que a reescrita mapeia; o resto fica '-')
- * para comparar com o ram.txt do harness (tools/cmpram.py) */
+/* Rebuilds the original's RAM (only the addresses the rewrite maps; the rest stays '-')
+ * to compare with the harness's ram.txt (tools/cmpram.py) */
 static void put8(int *ram, int a, unsigned v, int nibbles)
 {
 	int i;
@@ -140,7 +140,7 @@ static void dump_ram(const char *label)
 	}
 	fflush(f_ram);
 }
-/* snd.txt: mudanças do buzzer, no mesmo formato do harness */
+/* snd.txt: buzzer changes, in the same format as the harness */
 void front_set_buzzer(bool on, u8 freq)
 {
 	if (on) {
@@ -179,9 +179,9 @@ int main(int argc, char **argv)
 		if (!strcmp(argv[i], "-r") && i + 1 < argc) rom = argv[++i];
 		else if (!strcmp(argv[i], "-s") && i + 1 < argc) script = argv[++i];
 		else if (!strcmp(argv[i], "-o") && i + 1 < argc) out = argv[++i];
-		else { fprintf(stderr, "uso: %s [-r rom] -s script [-o dir]\n", argv[0]); return 1; }
+		else { fprintf(stderr, "usage: %s [-r rom] -s script [-o dir]\n", argv[0]); return 1; }
 	}
-	if (!rom_load(rom)) { fprintf(stderr, "não consegui ler a ROM %s\n", rom); return 1; }
+	if (!rom_load(rom)) { fprintf(stderr, "could not read the ROM %s\n", rom); return 1; }
 	fs = (!script || !strcmp(script, "-")) ? stdin : fopen(script, "r");
 	if (!fs) { perror(script); return 1; }
 	load_script(fs);

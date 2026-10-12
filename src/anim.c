@@ -1,12 +1,12 @@
 /*
- * Motor de animação do pet (0x465 / 0x486) e overlays da tela do pet (0x400).
+ * Pet animation engine (0x465 / 0x486) and pet screen overlays (0x400).
  *
- * Cada (espécie, conjunto de animação) aponta para dois scripts na ROM:
- *  - script de POSE (página B): bytes {flags<<4 | delay}; escolhe qual dos dois sprites
- *    (sprite_a / sprite_b) vai em cada metade e se espelha;
- *  - script de MOVIMENTO (página 9): {flags<<4 | delay, arg}; arg com bit0 = deslocamento
- *    relativo, senão posição absoluta (em nibbles da vram).
- * Entradas com um byte a mais são saltos (o byte extra é o novo ponteiro).
+ * Each (species, animation set) points to two scripts in the ROM:
+ *  - POSE script (page B): bytes {flags<<4 | delay}; chooses which of the two sprites
+ *    (sprite_a / sprite_b) goes in each half and whether it is mirrored;
+ *  - MOVEMENT script (page 9): {flags<<4 | delay, arg}; arg with bit0 = relative
+ *    offset, otherwise absolute position (in vram nibbles).
+ * Entries with one extra byte are jumps (the extra byte is the new pointer).
  */
 #include "tama.h"
 
@@ -14,8 +14,8 @@
 void reset_pet_animation(void)
 {
 	u8 idx = (g.species << 4) | g.anim_set;
-	u8 sprites = rom_byte(0xA00 + idx);    /* tabela pose->sprites */
-	u8 scripts = rom_byte(0xB00 + idx);    /* lo = script de pose, hi = script de movimento */
+	u8 sprites = rom_byte(0xA00 + idx);    /* pose->sprites table */
+	u8 scripts = rom_byte(0xB00 + idx);    /* lo = pose script, hi = movement script */
 
 	cost_ms(8.1);
 	g.pose_timer = 0;
@@ -26,7 +26,7 @@ void reset_pet_animation(void)
 	g.pose_ptr = rom_byte(0xBC0 + (scripts & 0xF));
 }
 
-/* 0x928 / 0x939: metade de cima (tabela C) ou de baixo (tabela D) do pet em g.draw_at */
+/* 0x928 / 0x939: upper half (table C) or lower half (table D) of the pet at g.draw_at */
 void draw_pet_half(u8 frame, u8 flip, bool lower)
 {
 	u16 table = lower ? 0xD00 : 0xC00;
@@ -35,11 +35,11 @@ void draw_pet_half(u8 frame, u8 flip, bool lower)
 	u8 sprite;
 
 	cost_ms(3.5);
-	id ^= (flip & 8) << 4;                 /* bit7 = espelhar */
+	id ^= (flip & 8) << 4;                 /* bit7 = mirror */
 	sprite = (id & 0x7F) + 3;
-	if (sprite >= 0x80) return;            /* 0x7F = metade vazia */
+	if (sprite >= 0x80) return;            /* 0x7F = empty half */
 	draw_rom_bitmap(g.draw_at, 0x1000 + 0x10 * sprite);
-	if (id & 0x80) {                       /* espelha as 16 colunas */
+	if (id & 0x80) {                       /* mirrors the 16 columns */
 		u8 x = g.draw_at, y = g.draw_at + 0x1E, t;
 		int i;
 		cost_ms(10);
@@ -50,14 +50,14 @@ void draw_pet_half(u8 frame, u8 flip, bool lower)
 	}
 }
 
-/* 0x486: um quadro do pet */
+/* 0x486: one frame of the pet */
 void step_pet_animation(void)
 {
 	u8 b[3];
 	int n;
 
 	cost_ms(14);
-	/* script de pose */
+	/* pose script */
 	if (g.pose_timer == 0) {
 		u8 p = g.pose_ptr++;
 		n = rom_table(0xB00 + p, b, 2);
@@ -67,7 +67,7 @@ void step_pet_animation(void)
 	} else {
 		g.pose_timer--;
 	}
-	/* script de movimento */
+	/* movement script */
 	if (g.move_count == 0) {
 		u8 p = g.move_ptr;
 		g.move_ptr = p + 2;
@@ -79,7 +79,7 @@ void step_pet_animation(void)
 	} else {
 		g.move_count--;
 	}
-	/* posição (todo quadro) */
+	/* position (every frame) */
 	if (g.move_arg & 1) g.pet_pos += g.move_arg & 0xFE;
 	else g.pet_pos = g.move_arg;
 	g.draw_at = g.pet_pos;
@@ -97,7 +97,7 @@ void step_pet_animation(void)
 	}
 }
 
-/* 0x400: luz apagada, Z de sono, caveira e cocôs (na página esquerda da vram) */
+/* 0x400: light off, sleep Z, skull and poops (on the left page of the vram) */
 void draw_pet_overlays(void)
 {
 	static const u8 poop_at[8] = { 0xB0, 0x30, 0xA0, 0x20, 0x90, 0x10, 0x80, 0x00 };
@@ -106,25 +106,25 @@ void draw_pet_overlays(void)
 
 	cost_ms(9.4);
 	if (g.light == 0) {
-		cost_ms(36);                      /* pintar 128 nibbles de preto (medido: ~61 ms com o Z) */
+		cost_ms(36);                      /* paint 128 nibbles black (measured: ~61 ms with the Z) */
 		for (i = 0; i < 0x40; i++) vram[i] = vram[0x80 + i] = 0xF;
 		if (g.sleep & 8) {
 			g.sleep = ((g.sleep + 1) | 8) & 0xF;
-			draw_tile(0x20, 0x20 + ((g.sleep >> 1) & 1));   /* "Z" em fundo preto */
+			draw_tile(0x20, 0x20 + ((g.sleep >> 1) & 1));   /* "Z" on a black background */
 		}
 		return;
 	}
 	if (g.sleep & 8) {
 		g.sleep = ((g.sleep + 1) | 8) & 0xF;
-		draw_tile(0x30, 0x3A + ((g.sleep >> 1) & 1));       /* "Z" em fundo claro */
+		draw_tile(0x30, 0x3A + ((g.sleep >> 1) & 1));       /* "Z" on a light background */
 	} else if (g.sick & 8) {
-		draw_tile(0x30, 0x22);                              /* caveira */
+		draw_tile(0x30, 0x22);                              /* skull */
 	}
 
 	g.frame_counter = (g.frame_counter + 1) & 0xF;
-	tile = 0x10 + 0xE + ((g.frame_counter >> 1) & 1);      /* cocô (2 quadros) */
+	tile = 0x10 + 0xE + ((g.frame_counter >> 1) & 1);      /* poop (2 frames) */
 	n = g.poop > 8 ? 8 : g.poop;
-	if (n >= 3) {                                           /* empurra o pet para a esquerda */
+	if (n >= 3) {                                           /* pushes the pet to the left */
 		u8 k = ((n - 3) >> 1) + 1;
 		for (i = 0; i < 0x40; i++) {
 			vram[i] = vram[(u8) (i + 16 * k)];
@@ -155,9 +155,9 @@ void select_pet_anim_set(void)
 }
 
 /*
- * 0x8A9 label_273: toca uma animação com glifo sobreposto (comida, Z, caveira, brilho...)
- * enquanto o pet anima no conjunto anim_set. Dura até `seconds` segundos, ou até um botão
- * se g.skippable. Scripts na página E (índice em 0xE00): passos {hold<<6 | glifo, posição}.
+ * 0x8A9 label_273: plays an animation with an overlaid glyph (food, Z, skull, sparkle...)
+ * while the pet animates in the anim_set set. Lasts up to `seconds` seconds, or until a button
+ * if g.skippable. Scripts in page E (index at 0xE00): steps {hold<<6 | glyph, position}.
  */
 void play_overlay_anim(u8 anim_set, u8 seconds, u8 script)
 {
@@ -185,7 +185,7 @@ void play_overlay_anim(u8 anim_set, u8 seconds, u8 script)
 		}
 		if (glyph != 0x3F) {
 			u8 xl = pos & 0xF, xh = pos >> 4;
-			if (g.species == 1) {               /* Babytchi: reposiciona o glifo */
+			if (g.species == 1) {               /* Babytchi: repositions the glyph */
 				unsigned c;
 				if (xh) xh |= 8;
 				c = (xl + 8) >> 4; xl = (xl + 8) & 0xF;

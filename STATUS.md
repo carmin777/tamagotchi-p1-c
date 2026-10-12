@@ -1,35 +1,48 @@
 # Status (2026-10-12)
 
-## Pronto
-- **Reescrita completa do jogo em C** (`src/`), sem emular o CPU: boot, acerto do relógio,
-  ovo/eclosão, tela do pet com animação e overlays, os 7 ícones (comida, luz, jogo, remédio,
-  banheiro, status, disciplina), eventos (dormir, chamadas, cocô, doença), evolução, morte/lápide,
-  reset mantendo o relógio, teste de LCD de fábrica, som.
-- **Jogável**: `./tama-nativo` (SDL2; ← ↓ → ou A S D; F = 10x; salva ao fechar em
-  `~/.local/share/tamagotchi-p1/save.bin`; `-n` começa do zero). Com o app fechado o tempo para.
-- **Validação contra o emulador** (`tools/validate.sh`): estado do jogo (RAM mapeada) igual
-  em todos os scripts, exceto os casos abaixo; som igual; frames iguais um a um no boot/relógio,
-  teste de fábrica e lápide→reset; no resto, mesmas telas/animações com ritmo ~1% diferente.
+## Done
+- **Complete rewrite of the game in C** (`src/`), without emulating the CPU: boot, clock setting,
+  egg/hatching, pet screen with animation and overlays, the 7 icons (food, light, game, medicine,
+  toilet, status, discipline), events (sleep, calls, poop, sickness), evolution, death/tombstone,
+  reset that keeps the clock, factory LCD test, sound.
+- **Playable**: `./tama-nativo` (SDL2; ← ↓ → or A S D; F = 10x; saves on exit to
+  `~/.local/share/tamagotchi-p1/save.bin`; `-n` starts from scratch). While the app is closed,
+  time stands still.
+- **Validation against the emulator** (`tools/validate.sh`): game state (mapped RAM) is identical
+  in every script except the cases below; sound identical; frames identical one by one for
+  boot/clock, factory test and tombstone→reset; elsewhere, the same screens/animations with a
+  pace ~1% off.
+- **Builds** (GitHub Actions): Windows (.exe), Android (APK), WebAssembly. Released as `v0.1.0`
+  (pre-release). None of them has been tested on a real Windows machine, a real device or a
+  browser yet.
 
-## Diferenças conhecidas (todas de *tempo*, não de lógica)
-- O ritmo das telas é o do CPU original; a reescrita usa custos medidos por rotina e acerta
-  ~1–2%. Consequências:
-  - fase de animações de 2 quadros (cocô, "Z" do sono = 0x4A bits 0-2, contador 0x07E) pode
-    sair invertida depois de animações com timeout;
-  - o **jogo de adivinhar** usa o contador 0x05A (+1 por tick); o resultado depende do tick
-    exato em que o botão é lido, então os sorteios diferem do emulador (o mecanismo é o mesmo);
-  - pressões de botão a < 1 s uma da outra podem cair em voltas diferentes do laço (ex.:
-    `t_care_light`); o pisca de 0,2 s do ícone de atenção na virada do minuto é uma corrida.
-- Não testado: morte por velhice (anjo).
+## Known differences (all of *timing*, not of logic)
+- The pace of the screens is that of the original CPU; the rewrite uses per-routine measured
+  costs and gets within ~1–2%. Consequences:
+  - the phase of 2-frame animations (poop, sleep "Z" = 0x4A bits 0-2, counter 0x07E) may come
+    out inverted after animations that end by timeout;
+  - the **guessing game** uses counter 0x05A (+1 per tick); the outcome depends on the exact tick
+    at which the button is read, so the draws differ from the emulator (the mechanism is the same);
+  - button presses less than 1 s apart may fall into different iterations of the loop (e.g.
+    `t_care_light`); the 0.2 s blink of the attention icon at the turn of the minute is a race.
+- Not tested: death of old age (angel).
 
-## Errata das notas de RE (re/notes) — já corrigida nas notas em 2026-10-12
-- Botões em RAM: bit0=R, bit1=M, bit2=L (notas 0x000 e 0x800 dizem L=bit0).
-- 0x5D = espécie, 0x50 = estágio; 0x4A bit3 = dormindo (não "morto"); evento 4 = cocô.
-- O prog timer roda livre a 256/7 Hz (27,34 ms); a ISR de 1 Hz não reinicia a fase.
-- Laço de limpeza do init (0x047) zera 16 nibbles por volta: o init limpa 0x000–0x0DF,
-  0x100–0x26F e o LCD inteiro (notas 0x200 §2.4 erradas).
-- Teste de fábrica, 1º passo: XP ainda é 2, então os ícones não acendem (bug do original).
+## Errata of the RE notes (re/notes) — already fixed in the notes on 2026-10-12
+- Buttons in RAM: bit0=R, bit1=M, bit2=L (notes 0x000 and 0x800 said L=bit0).
+- 0x5D = species, 0x50 = stage; 0x4A bit3 = sleeping (not "dead"); event 4 = poop.
+- The prog timer runs free at 256/7 Hz (27.34 ms); the 1 Hz ISR does not restart its phase.
+- The init's clearing loop (0x047) zeroes 16 nibbles per iteration: init clears 0x000–0x0DF,
+  0x100–0x26F and the whole LCD (notes 0x200 §2.4 were wrong).
+- Factory test, 1st step: XP is still 2, so the icons do not light up (a bug in the original).
 
-## Ideias
-- Tempo exato por instrução (para sorteios idênticos) exigiria contar ciclos do caminho real.
-- Pet que continua vivendo com o app fechado; base para o pet com biologia/Needle/Nostr.
+## Cross-checks against Epson's documents
+- I/O registers used by the ROM were checked against the *E0C6S46 Technical Hardware* manual
+  (see "I/O registers used" in `re/notes/0x000-0x1FF.md`); one error found and fixed
+  (F77 is the stopwatch, not the clock).
+- TamaLIB's per-instruction cycle counts match the *E0C6200/6200A Core CPU Manual*.
+
+## Ideas
+- Exact per-instruction timing (for identical draws) would require counting cycles along the real path.
+- A pet that keeps living while the app is closed; basis for a pet with biology/Needle/Nostr.
+- Other ROMs of the same family (P2, Angel…): see the discussion about a compatibility
+  (emulator) mode versus per-game rewrites. The ROMs are not publicly available.

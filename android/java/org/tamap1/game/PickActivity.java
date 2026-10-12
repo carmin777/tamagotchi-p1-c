@@ -14,8 +14,8 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 
 /**
- * Tela inicial: pede o dump da ROM (tama.b, 12288 bytes) uma única vez e o copia para o
- * armazenamento interno do app (getFilesDir()/tama.b, onde o código nativo o procura).
+ * Start screen: asks for the ROM dump (tama.b, 12288 bytes) once and copies it to the
+ * app's internal storage (getFilesDir()/tama.b, where the native code looks for it).
  */
 public class PickActivity extends Activity {
     private static final int REQ_ROM = 1;
@@ -39,11 +39,11 @@ public class PickActivity extends Activity {
         l.setGravity(Gravity.CENTER);
         l.setPadding(48, 48, 48, 48);
         TextView t = new TextView(this);
-        t.setText("Tamagotchi P1\n\nEscolha o dump da ROM (tama.b, 12288 bytes). "
-                + "Ele é copiado só para o armazenamento do app e não sai do aparelho.");
+        t.setText("Tamagotchi P1\n\nChoose the ROM dump (tama.b, 12288 bytes). "
+                + "It is copied only to the app's storage and never leaves the device.");
         t.setTextSize(18);
         Button pick = new Button(this);
-        pick.setText("Escolher ROM");
+        pick.setText("Choose ROM");
         pick.setOnClickListener(v -> {
             Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT);
             i.addCategory(Intent.CATEGORY_OPENABLE);
@@ -69,11 +69,11 @@ public class PickActivity extends Activity {
             int n;
             while ((n = in.read(buf)) > 0) out.write(buf, 0, n);
         } catch (Exception e) {
-            msg.setText("Não consegui ler o arquivo: " + e.getMessage());
+            msg.setText("Could not read the file: " + e.getMessage());
             return;
         }
         if (tmp.length() != ROM_SIZE) {
-            msg.setText("Arquivo com " + tmp.length() + " bytes; o esperado é " + ROM_SIZE + ".");
+            msg.setText("File has " + tmp.length() + " bytes; expected " + ROM_SIZE + ".");
             tmp.delete();
             return;
         }

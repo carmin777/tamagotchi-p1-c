@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Lista frames de um frames.txt entre dois tempos: tools/frames.py arq T0 T1 [--full]"""
+"""Lists frames of a frames.txt between two times: tools/frames.py file T0 T1 [--full]"""
 import sys
 path, t0, t1 = sys.argv[1], float(sys.argv[2]), float(sys.argv[3])
 full = '--full' in sys.argv

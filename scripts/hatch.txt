@@ -1,7 +1,7 @@
-# hatch.txt - do ovo ao Babytchi (estagio 0). Requer out/boot_egg.sav (rode boot_set_clock.txt antes).
+# hatch.txt - from the egg to the Babytchi (stage 0). Requires out/boot_egg.sav (run boot_set_clock.txt first).
 load out/boot_egg.sav
 dump egg
-wait 285          # ovo choca ~ 280s apos entrar na tela do ovo
+wait 285          # egg hatches ~ 280s after entering the egg screen
 mark hatched
 wait 30
 dump baby_start

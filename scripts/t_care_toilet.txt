@@ -1,7 +1,7 @@
-# t_care_toilet.txt - bebe: banheiro sem coco (so a onda) e com 1 coco (~15 min apos chocar).
-# R cancela, depois timeout do seletor e do menu.
+# t_care_toilet.txt - baby: toilet without poop (only the wave) and with 1 poop (~15 min after hatching).
+# R cancels, then timeout of the selector and of the menu.
 wait 4
-press M           # ajuste do relogio
+press M           # clock setting
 wait 2.3
 press L
 press L
@@ -11,30 +11,30 @@ press L
 press L
 press L
 press L           # 08:00 AM
-press R           # confirma
+press R           # confirm
 wait 3.3
-press M           # tela do pet (ovo)
-mark ovo
-wait 330          # ovo choca ~5 min depois de o relogio andar
+press M           # pet screen (egg)
+mark egg
+wait 330          # egg hatches ~5 min after the clock starts running
 wait 10.55
-dump antes
+dump before
 press L
 press L
 press L
 press L
-press L           # icone banheiro
-press M           # sem coco: so a onda
-mark onda
+press L           # toilet icon
+press M           # no poop: only the wave
+mark wave
 wait 3.0
-dump vazio
-wait 920          # menu volta ao icone 0; primeiro coco (~1210 s)
-dump coco
+dump empty
+wait 920          # menu goes back to icon 0; first poop (~1210 s)
+dump poop
 press L
 press L
 press L
 press L
-press L           # icone banheiro
-press M           # limpa
-mark limpa
+press L           # toilet icon
+press M           # cleans
+mark cleaned
 wait 8.0
-dump limpo
+dump clean

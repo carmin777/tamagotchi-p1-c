@@ -1,7 +1,7 @@
-# t_life_evolve.txt - boot, 08:00, ovo choca (~316 s) e o Babytchi, sem cuidados, evolui
-# para Marutchi 60 min depois (~4219 s): som, dissolve, animação, dissolve, nova forma.
+# t_life_evolve.txt - boot, 08:00, the egg hatches (~316 s) and the Babytchi, without care, evolves
+# into Marutchi 60 min later (~4219 s): sound, dissolve, animation, dissolve, new form.
 wait 4
-press M           # ajuste do relogio
+press M           # clock setting
 wait 2.3
 press L
 press L
@@ -11,13 +11,13 @@ press L
 press L
 press L
 press L           # 08:00 AM
-press R           # confirma
+press R           # confirm
 wait 3.3
-press M           # tela do pet (ovo)
-mark ovo
+press M           # pet screen (egg)
+mark egg
 wait 4180
-dump antes
-mark evolui
+dump before
+mark evolves
 wait 30
-dump depois
+dump after
 wait 30

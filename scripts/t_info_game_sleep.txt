@@ -1,6 +1,6 @@
-# t_hatch.txt - boot, acerta 08:00, vai ao ovo, espera chocar e deixa o bebe sozinho 20 min.
+# t_hatch.txt - boot, set 08:00, go to the egg, wait for hatching and leave the baby alone for 20 min.
 wait 4
-press M           # ajuste do relogio
+press M           # clock setting
 wait 2.3
 press L
 press L
@@ -10,23 +10,23 @@ press L
 press L
 press L
 press L           # 08:00 AM
-press R           # confirma
+press R           # confirm
 wait 3.3
-press M           # tela do pet (ovo)
-mark ovo
-wait 2730.3       # bebe chocou; ~40 min acordado depois dorme (cochilo)
-dump dormindo
+press M           # pet screen (egg)
+mark egg
+wait 2730.3       # baby hatched; ~40 min awake then sleeps (nap)
+dump sleeping
 press L
 press L
-press L           # icone 3: jogo
-mark ini
-press M           # recusa: dormindo (volta ao menu, sem animacao)
+press L           # icon 3: game
+mark start
+press M           # refuses: sleeping (back to the menu, no animation)
 wait 1.2
-dump recusa
-press M           # de novo
+dump refusal
+press M           # again
 wait 1.3
 press R
 wait 1.1
-mark fim
-dump fim
+mark end
+dump end
 wait 2

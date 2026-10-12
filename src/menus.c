@@ -1,7 +1,7 @@
-/* Menu de ícones (0x2C3) e as ações de cada ícone (tabela 0x700). */
+/* Icon menu (0x2C3) and the actions of each icon (table 0x700). */
 #include "tama.h"
 
-/* 0x1EC label_66: prepara cursor, limite e timeout, e descarta apertos pendentes */
+/* 0x1EC label_66: sets up cursor, limit and timeout, and discards pending presses */
 void menu_init(u8 limit, u8 timeout)
 {
 	g.cursor = 0;
@@ -12,7 +12,7 @@ void menu_init(u8 limit, u8 timeout)
 	read_buttons();
 }
 
-/* 0x2C3 label_94: L avança o cursor, M confirma, R cancela; timeout cancela */
+/* 0x2C3 label_94: L advances the cursor, M confirms, R cancels; timeout cancels */
 int menu_poll(void)
 {
 	cost_ms(3.7);
@@ -29,7 +29,7 @@ int menu_poll(void)
 	return MENU_TIMEOUT;
 }
 
-/* 0x700: 1 comida, 2 luz, 3 jogo, 4 remédio, 5 banheiro, 6 status, 7 disciplina */
+/* 0x700: 1 food, 2 light, 3 game, 4 medicine, 5 toilet, 6 status, 7 discipline */
 void run_menu_item(u8 cursor)
 {
 	switch (cursor) {

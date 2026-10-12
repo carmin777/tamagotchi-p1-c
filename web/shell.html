@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="pt-BR">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
@@ -21,15 +21,15 @@
 <body>
 <div id="pick">
   <h1>Tamagotchi P1</h1>
-  <p>Reescrita em C do Tamagotchi P1. Para jogar, escolha o dump da ROM (<code>tama.b</code>, 12288 bytes).
-     Ele fica só no seu navegador, não é enviado a lugar nenhum.</p>
+  <p>A native C rewrite of the Tamagotchi P1. To play, choose your ROM dump (<code>tama.b</code>, 12288 bytes).
+     It stays in your browser only and is never uploaded anywhere.</p>
   <input type="file" id="rom" accept=".b,.bin">
   <p id="msg"></p>
 </div>
 <canvas id="canvas" tabindex="-1" oncontextmenu="event.preventDefault()"></canvas>
 <div id="btns"><button data-m="4">A</button><button data-m="2">B</button><button data-m="1">C</button></div>
-<small id="hint" style="display:none">Teclado: ← ↓ → ou A S D · F = 10x. O jogo salva sozinho neste navegador; com a aba fechada o tempo do pet para.
-  <br><button class="link" id="reset">apagar jogo e ROM</button></small>
+<small id="hint" style="display:none">Keyboard: ← ↓ → or A S D · F = 10x. The game saves by itself in this browser; while the tab is closed the pet's time stands still.
+  <br><button class="link" id="reset">delete saved game and ROM</button></small>
 <script>
 var Module = {
   noInitialRun: true,
@@ -54,7 +54,7 @@ Module.onRuntimeInitialized = function () {
   document.getElementById('rom').onchange = function (ev) {
     var f = ev.target.files[0]; if (!f) return;
     f.arrayBuffer().then(function (buf) {
-      if (buf.byteLength !== 12288) { msg.textContent = 'Arquivo com ' + buf.byteLength + ' bytes; o esperado é 12288.'; return; }
+      if (buf.byteLength !== 12288) { msg.textContent = 'File has ' + buf.byteLength + ' bytes; expected 12288.'; return; }
       FS.writeFile('/save/rom.b', new Uint8Array(buf));
       FS.syncfs(false, function () { start(); });
     });
@@ -68,7 +68,7 @@ Module.onRuntimeInitialized = function () {
   document.addEventListener('visibilitychange', function () { if (document.hidden && Module._tama_save) Module._tama_save(); });
   window.addEventListener('pagehide', function () { if (Module._tama_save) Module._tama_save(); });
   document.getElementById('reset').onclick = function () {
-    if (!confirm('Apagar o jogo salvo e a ROM deste navegador?')) return;
+    if (!confirm('Delete the saved game and the ROM from this browser?')) return;
     ['rom.b', 'save.bin'].forEach(function (n) { try { FS.unlink('/save/' + n); } catch (e) {} });
     FS.syncfs(false, function () { location.reload(); });
   };

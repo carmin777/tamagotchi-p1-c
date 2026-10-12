@@ -1,17 +1,17 @@
-/* Ciclo de vida: evolução (0x34B), morte e lápide (0x374), reset mantendo o relógio
- * (0x206), teste de LCD de fábrica (0x256) e dissolve de tela (0x906). */
+/* Life cycle: evolution (0x34B), death and tombstone (0x374), reset keeping the clock
+ * (0x206), factory LCD test (0x256) and screen dissolve (0x906). */
 #include <string.h>
 #include <setjmp.h>
 #include "tama.h"
 
-extern jmp_buf soft_reset_point;   /* screens.c: volta ao laço do pet (0x517) */
+extern jmp_buf soft_reset_point;   /* screens.c: back to the pet loop (0x517) */
 void prog_timer_start(void);       /* machine.c */
 void irq_disable(void), irq_enable(void);
 
 /* ---------------------------------------------------------------- dissolve */
 
-/* 0x913 or_dither_pattern: OR de uma máscara (tabela 0x800, índice 0..7) em toda a vram,
- * em grupos de 4 nibbles {lo, lo, hi, hi}. Os 8 passos juntos acendem todos os pixels. */
+/* 0x913 or_dither_pattern: ORs a mask (table 0x800, index 0..7) into the whole vram,
+ * in groups of 4 nibbles {lo, lo, hi, hi}. The 8 steps together light every pixel. */
 static void or_dither_pattern(u8 step)
 {
 	u8 mask = rom_byte(0x800 + step), lo = mask & 0xF, hi = mask >> 4;
@@ -24,7 +24,7 @@ static void or_dither_pattern(u8 step)
 	cost_ms(130);
 }
 
-/* 0x906 copy_video_buf_8x: escurece a tela em 8 passos (1 tick cada) e limpa a vram */
+/* 0x906 copy_video_buf_8x: darkens the screen in 8 steps (1 tick each) and clears the vram */
 void screen_dissolve(void)
 {
 	u8 step;
@@ -37,18 +37,18 @@ void screen_dissolve(void)
 	vram_clear();
 }
 
-/* ---------------------------------------------------------------- evolução */
+/* ---------------------------------------------------------------- evolution */
 
-/* 0x89E label_271: animação "sem glifo" (script 0) no conjunto de animação atual */
+/* 0x89E label_271: "no glyph" animation (script 0) in the current animation set */
 static void play_plain_anim(u8 seconds)
 {
 	select_pet_anim_set();
 	play_overlay_anim(g.anim_set, seconds, 0);
 }
 
-/* 0x34B evento 5: o pet evolui. As regras do estágio atual (0xD9C–0xDC5, carregadas em
- * RAM 0x090 por 0xDC6) são entradas {min_care_mistakes, min_discipline_misses,
- * novo stage, nova species}; vale a primeira que casa. */
+/* 0x34B event 5: the pet evolves. The current stage's rules (0xD9C–0xDC5, loaded into
+ * RAM 0x090 by 0xDC6) are entries {min_care_mistakes, min_discipline_misses,
+ * new stage, new species}; the first one that matches wins. */
 void ev_evolve(void)
 {
 	u8 rules[16], e;
@@ -67,7 +67,7 @@ void ev_evolve(void)
 		if (g.care_mistakes >= min_care && g.discipline_misses >= min_disc) break;
 		e++;
 	}
-	/* e aponta o byte com os critérios; o seguinte tem {stage, species} */
+	/* and points at the byte with the criteria; the next one has {stage, species} */
 	g.stage = rules[e + 1] & 0xF;
 	g.species = rules[e + 1] >> 4;
 
@@ -76,24 +76,24 @@ void ev_evolve(void)
 	load_species_params();                       /* 0xDD2 */
 }
 
-/* ---------------------------------------------------------------- reset mantendo o relógio */
+/* ---------------------------------------------------------------- reset keeping the clock */
 
-/* 0x206 soft_reset_keep_clock (L+R segurados na lápide): novo ovo, mesma hora.
- * Não retorna: continua no laço do menu do pet (0x517). */
+/* 0x206 soft_reset_keep_clock (L+R held on the tombstone): new egg, same time.
+ * Does not return: continues in the pet menu loop (0x517). */
 void soft_reset(void)
 {
 	u8 sec = g.sec, min = g.min, hour = g.hour;  /* 0x20C: 0x010-0x015 -> 0x272-0x277 */
 
 	irq_disable();                               /* 0x206 clear_0x07D: rst f */
 	cost_ms(4);
-	/* 0x11E0 set_init_mem_and_int: 16 nibbles por volta de 0x047 => zera 0x000-0x0DF,
-	 * 0x100-0x1FF, 0x200-0x26F e toda a RAM de display (pixels e ícones) */
+	/* 0x11E0 set_init_mem_and_int: 16 nibbles per iteration of 0x047 => clears 0x000-0x0DF,
+	 * 0x100-0x1FF, 0x200-0x26F and all the display RAM (pixels and icons) */
 	memset(&g, 0, sizeof(g));
 	memset(vram, 0, sizeof(vram));
 	memset(lcd, 0, sizeof(lcd));
 	lcd_icons = 0;
 	g.clock_backup[0] = sec; g.clock_backup[1] = min; g.clock_backup[2] = hour;
-	/* 0x1200: valores de fábrica */
+	/* 0x1200: factory values */
 	g.hour = 0x20;
 	g.snd_ptr = SND_IDLE;
 	g.snd_rep_lo = g.snd_rep_hi = 0xF;
@@ -101,10 +101,10 @@ void soft_reset(void)
 	g.clock_running = 0;
 	g.skippable = 0;
 	g.egg = 5;
-	cost_ms(67);                                 /* como init_mem_and_int em screens.c */
-	prog_timer_start();                          /* F78: 2 (para) e depois 1 => fase nova */
+	cost_ms(67);                                 /* like init_mem_and_int in screens.c */
+	prog_timer_start();                          /* F78: 2 (stops) and then 1 => new phase */
 	cost_ms(8);
-	g.sec = sec; g.min = min; g.hour = hour;     /* 0x218: restaura o relógio */
+	g.sec = sec; g.min = min; g.hour = hour;     /* 0x218: restores the clock */
 	irq_enable();                                /* 0x219 set_f_0x07D */
 	play_sound(SND_BOOT, 0, 0xF);
 	init_new_game_state();                       /* 0x761 */
@@ -114,10 +114,10 @@ void soft_reset(void)
 	longjmp(soft_reset_point, 1);                /* SP = 0xFF; jp 0x517 */
 }
 
-/* ---------------------------------------------------------------- morte */
+/* ---------------------------------------------------------------- death */
 
-/* 0x200 poll_cancel_or_reset: apresenta, lê botões; L+R segurados = soft reset.
- * Devolve true se R foi apertado. */
+/* 0x200 poll_cancel_or_reset: presents, reads buttons; L+R held = soft reset.
+ * Returns true if R was pressed. */
 static bool poll_cancel_or_reset(void)
 {
 	lcd_present();
@@ -126,16 +126,16 @@ static bool poll_cancel_or_reset(void)
 	return g.btn_pressed & BTN_R;
 }
 
-/* 0x3EE label_128: pet inteiro (metade de cima em draw_at, de baixo +0x80) */
+/* 0x3EE label_128: whole pet (upper half at draw_at, lower +0x80) */
 static void draw_pet_pose(u8 pose, u8 flip)
 {
-	cost_ms(15);                                 /* 58 ms medidos, menos o de draw_pet_half */
+	cost_ms(15);                                 /* 58 ms measured, minus that of draw_pet_half */
 	draw_pet_half(pose, flip, false);
 	g.draw_at += 0x80;
 	draw_pet_half(pose, flip, true);
 }
 
-/* 0x3E4 label_126: o anjo (espécie 0, pose 0) em 0x20 */
+/* 0x3E4 label_126: the angel (species 0, pose 0) at 0x20 */
 static void draw_angel(void)
 {
 	g.species = 0;
@@ -144,7 +144,7 @@ static void draw_angel(void)
 	lcd_present();
 }
 
-/* 0x3D7 label_125: o pet morto (pose 4 da tabela 0xA00, sprite b) em 0x00, e o anjo */
+/* 0x3D7 label_125: the dead pet (pose 4 of table 0xA00, sprite b) at 0x00, and the angel */
 static void draw_dying_pet(u8 species)
 {
 	vram_clear();
@@ -154,7 +154,7 @@ static void draw_dying_pet(u8 species)
 	draw_angel();
 }
 
-/* 0x374 evento 6: morte, (anjo se morreu de velhice) e a lápide */
+/* 0x374 event 6: death, (angel if it died of old age) and the tombstone */
 void ev_death(void)
 {
 	u8 dead_species;
@@ -162,7 +162,7 @@ void ev_death(void)
 
 	set_menu_icon(0);
 	screen_dissolve();
-	g.skippable = 0;                             /* animações não puláveis */
+	g.skippable = 0;                             /* non-skippable animations */
 	g.sick = 0; g.sick_count = 0;
 	g.sleep = 0; g.light = 0xF;
 	g.m4c = 0; g.poop = 0;
@@ -176,7 +176,7 @@ void ev_death(void)
 	play_overlay_anim(0xA, 0xA, 5);
 	g.species = 0;
 
-	if (g.lifespan_over) {                       /* velhice: o anjo */
+	if (g.lifespan_over) {                       /* old age: the angel */
 		draw_dying_pet(dead_species);
 		wait_ticks(0x1B);
 		g.delay = 0x48;
@@ -190,17 +190,17 @@ void ev_death(void)
 
 	play_sound(SND_GRAVE, 0, 0xF);
 	read_buttons();
-	for (;;) {                                   /* lápide (0x3A1) */
+	for (;;) {                                   /* tombstone (0x3A1) */
 		vram_clear();
-		g.m80 = (g.m80 + 8) & 0xF;               /* alterna o espelhamento */
+		g.m80 = (g.m80 + 8) & 0xF;               /* toggles the mirroring */
 		g.draw_at = 0x00;
 		draw_pet_pose(3, g.m80);
 		g.draw_at = 0x20;
 		draw_pet_pose(4, 0);
 		if (!poll_cancel_or_reset()) continue;
-		/* R: mostra a idade */
+		/* R: shows the age */
 		play_beep();
-		draw_tile(0xD0, 0x19);                   /* glifo de idade */
+		draw_tile(0xD0, 0x19);                   /* age glyph */
 		draw_tile(0x50, g.age & 0xF);
 		if (g.age >> 4) draw_tile(0x40, g.age >> 4);
 		scroll_view_right(2, 2);
@@ -210,10 +210,10 @@ void ev_death(void)
 	}
 }
 
-/* ---------------------------------------------------------------- teste de fábrica */
+/* ---------------------------------------------------------------- factory test */
 
-/* 0x26B label_81 / 0x278 label_83: mostra o padrão e os ícones e espera que exatamente
- * o botão `btn` esteja segurado */
+/* 0x26B label_81 / 0x278 label_83: shows the pattern and the icons and waits for exactly
+ * the `btn` button to be held */
 static void lcd_test_show(u8 btn)
 {
 	write_icons();                               /* 0x7E1 */
@@ -235,16 +235,16 @@ static void lcd_test_fill(int icons, u8 a, u8 b, u8 btn)
 	lcd_test_show(btn);
 }
 
-/* 0x256: L segurado no reset. Quatro padrões, cada um avança com um botão (M, R, L, M) */
+/* 0x256: L held at reset. Four patterns, each advanced by a button (M, R, L, M) */
 void factory_lcd_test(void)
 {
 	int i;
 
-	/* no 1º passo XP ainda é 2 (de 0x23C): "0xFF" vai para 0x22C, não para os ícones */
-	lcd_test_fill(-1, 0xF, 0xF, BTN_M);          /* tudo aceso */
-	lcd_test_fill(0x5A, 0xA, 0x5, BTN_R);        /* xadrez */
-	lcd_test_fill(0xA5, 0x5, 0xA, BTN_L);        /* xadrez invertido */
-	g.icon_mask = 0;                             /* 0x281 label_85: moldura */
+	/* in the 1st step XP is still 2 (from 0x23C): "0xFF" goes to 0x22C, not to the icons */
+	lcd_test_fill(-1, 0xF, 0xF, BTN_M);          /* everything lit */
+	lcd_test_fill(0x5A, 0xA, 0x5, BTN_R);        /* checkerboard */
+	lcd_test_fill(0xA5, 0x5, 0xA, BTN_L);        /* inverted checkerboard */
+	g.icon_mask = 0;                             /* 0x281 label_85: frame */
 	for (i = 0; i < 0x80; i += 2) { vram[i] = 1; vram[i + 1] = 0; }
 	for (i = 0x80; i < 0x100; i += 2) { vram[i] = 0; vram[i + 1] = 8; }
 	vram[0x00] = vram[0x01] = vram[0x3E] = vram[0x3F] = 0xF;

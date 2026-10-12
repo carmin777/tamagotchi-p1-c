@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
-"""Compara a sequência de frames do LCD de duas execuções (formato frames.txt do
-harness/trace e do src/tama-headless).
+"""Compares the sequence of LCD frames of two runs (frames.txt format of
+harness/trace and src/tama-headless).
 
-- Descarta frames transitórios (que duram menos que --min s): o emulador mostra
-  cópias parciais da VRAM durante os ~100 ms da cópia.
-- Junta frames iguais consecutivos e compara as duas listas em ordem.
-- Reporta a defasagem de tempo entre frames correspondentes.
+- Discards transient frames (lasting less than --min s): the emulator shows
+  partial copies of the VRAM during the ~100 ms of the copy.
+- Merges consecutive equal frames and compares the two lists in order.
+- Reports the time offset between corresponding frames.
 
-Sai com código != 0 na primeira divergência (mostrando os dois frames lado a lado).
-uso: tools/cmpframes.py ref/frames.txt nova/frames.txt [--min 0.06] [--until T] [--max-drift S]
-     tools/cmpframes.py ref nova --tol 3   (modo tolerante: cada frame de um lado tem que
-         aparecer no outro com sobreposição de até ±3 s; ignora a ordem exata — serve para
-         execuções longas em que o ritmo das animações deriva um pouco)
+Exits with code != 0 at the first divergence (showing the two frames side by side).
+usage: tools/cmpframes.py ref/frames.txt new/frames.txt [--min 0.06] [--until T] [--max-drift S]
+     tools/cmpframes.py ref new --tol 3   (tolerant mode: each frame on one side must
+         appear on the other with an overlap of up to ±3 s; ignores the exact order — meant for
+         long runs in which the animation pace drifts a little)
 """
 import sys, argparse
 
@@ -65,12 +65,12 @@ def intervals(frames, end):
     return out
 
 if a.tol is not None:
-    # quadros curtos (< --min) só deixam de ser cobrados; como par vale a lista completa
+    # short frames (< --min) are merely not required to be matched; the full list counts as a match candidate
     ref_all, new_all = settle(load(a.ref, a.until), 0), settle(load(a.new, a.until), 0)
     end = min(ref[-1][0], new[-1][0])
     ri, ni = intervals(ref_all, end), intervals(new_all, end)
     bad = []
-    for name, src, dst in (('ref', ref, ni), ('nova', new, ri)):
+    for name, src, dst in (('ref', ref, ni), ('new', new, ri)):
         for i, (t, f) in enumerate(src):
             if t > end - a.tol:
                 break
@@ -80,34 +80,34 @@ if a.tol is not None:
     bad.sort(key=lambda x: x[0])
     if bad:
         t, name, f = bad[0]
-        print(f'{len(bad)} frame(s) sem par; primeiro: t={t:.3f} só na {name}:')
+        print(f'{len(bad)} unmatched frame(s); first: t={t:.3f} only in {name}:')
         print(f)
         other = new if name == 'ref' else ref
         near = [x for x in other if abs(x[0] - t) < a.tol]
         if near:
-            print(f'(na outra execução, perto de t={t:.1f}:)')
+            print(f'(in the other run, near t={t:.1f}:)')
             print(near[0][1])
         sys.exit(1)
-    print(f'ok (tolerante ±{a.tol}s): {len(ref)} frames ref, {len(new)} frames nova, até {end:.1f}s')
+    print(f'ok (tolerant ±{a.tol}s): {len(ref)} ref frames, {len(new)} new frames, up to {end:.1f}s')
     sys.exit(0)
 n = min(len(ref), len(new))
 drifts = []
 for i in range(n):
     if ref[i][1] != new[i][1]:
-        print(f'divergência no frame {i}: ref t={ref[i][0]:.3f}  nova t={new[i][0]:.3f}')
+        print(f'divergence at frame {i}: ref t={ref[i][0]:.3f}  new t={new[i][0]:.3f}')
         if i:
-            print(f'(frame anterior bateu: ref t={ref[i-1][0]:.3f} nova t={new[i-1][0]:.3f})')
-        print('ref' + ' ' * 32 + 'nova')
+            print(f'(previous frame matched: ref t={ref[i-1][0]:.3f} new t={new[i-1][0]:.3f})')
+        print('ref' + ' ' * 32 + 'new')
         print(side_by_side(ref[i][1], new[i][1]))
         sys.exit(1)
     drifts.append(new[i][0] - ref[i][0])
 status = 0
 if len(ref) != len(new):
-    print(f'aviso: {len(ref)} frames na ref, {len(new)} na nova (os {n} primeiros batem)')
+    print(f'warning: {len(ref)} frames in ref, {len(new)} in new (the first {n} match)')
     status = 2
 if drifts:
     worst = max(drifts, key=abs)
-    print(f'ok: {n} frames iguais; defasagem média {sum(drifts)/len(drifts):+.3f}s, pior {worst:+.3f}s, final {drifts[-1]:+.3f}s')
+    print(f'ok: {n} equal frames; mean offset {sum(drifts)/len(drifts):+.3f}s, worst {worst:+.3f}s, final {drifts[-1]:+.3f}s')
     if a.max_drift is not None and abs(worst) > a.max_drift:
         status = 3
 sys.exit(status)

@@ -1,6 +1,6 @@
 /*
- * Regras de cuidado: estado inicial, parâmetros por espécie, tique de minuto (0xC7A),
- * detecção de eventos (0xF00) e seus tratadores (0x307).
+ * Care rules: initial state, per-species parameters, minute tick (0xC7A),
+ * event detection (0xF00) and its handlers (0x307).
  */
 #include "tama.h"
 
@@ -35,19 +35,19 @@ void init_new_game_state(void)
 	g.baby_awake = 0x28;
 }
 
-/* 0x6E5 label_214: mantém o peso dentro de [mín, máx) da espécie */
+/* 0x6E5 label_214: keeps the weight within the species' [min, max) */
 static void clamp_weight(void)
 {
 	if (g.weight < g.p.weight_min) g.weight = g.p.weight_min;
 	else if (g.weight >= g.p.weight_max) g.weight = g.p.weight_max;
 }
 
-/* 0xDD2 label_347: carrega o bloco de 13 bytes da espécie (ROM 0x1564+) e reinicia os
- * contadores do estágio */
+/* 0xDD2 label_347: loads the species' 13-byte block (ROM 0x1564+) and restarts the
+ * stage counters */
 void load_species_params(void)
 {
 	u8 b[13];
-	u16 jp = rom_word(0x1558 + g.species);        /* jp para o bloco, na página 0x15 */
+	u16 jp = rom_word(0x1558 + g.species);        /* jp to the block, in page 0x15 */
 	int i;
 
 	cost_ms(40);
@@ -81,14 +81,14 @@ void load_species_params(void)
 	clamp_weight();
 }
 
-/* ---------------------------------------------------------------- 0xC7A tique de minuto */
+/* ---------------------------------------------------------------- 0xC7A minute tick */
 
 static u8 inc_nz_sat4(u8 v) { return (v != 0 && v != 0xF) ? v + 1 : v; }
 
 void minute_tick(void)
 {
 	if (g.egg == 0) return;
-	if (g.egg != 0xF) { g.egg--; return; }       /* contagem do ovo */
+	if (g.egg != 0xF) { g.egg--; return; }       /* egg countdown */
 	if (g.sleep & 8) {
 		if (g.species == 1) { if (g.nap) g.nap--; }
 		else if (g.sleep_minutes != 0xFF) g.sleep_minutes++;
@@ -126,18 +126,18 @@ bool check_events(void)
 	u8 hour;
 
 	if (g.egg != 0xF || g.event != 0) { cost_ms(2.2); return g.event != 0; }
-	/* O custo (~67 ms de CPU) é distribuído pelas seções, na ordem do original: o tique de
-	 * minuto (interrupção) pode cair no meio e só as seções seguintes veem o efeito. */
+	/* The cost (~67 ms of CPU) is spread over the sections, in the original's order: the minute
+	 * tick (interrupt) may land in the middle and only the following sections see the effect. */
 	cost_ms(8);
 	hour = g.hour;
-	if (g.sleep & 8) {                                    /* dormindo */
+	if (g.sleep & 8) {                                    /* sleeping */
 		bool wake;
 		if (g.species == 1) wake = (g.nap == 0);
 		else wake = hour >= g.p.wake_hour && hour < g.p.bed_hour;
 		if (wake) {
 			g.light = 0xF;
 			g.sleep = 0;
-			/* idade em dias (BCD), satura em 99 */
+			/* age in days (BCD), saturates at 99 */
 			if (g.age != 0x99) g.age = ((g.age & 0xF) == 9) ? (g.age & 0xF0) + 0x10 : g.age + 1;
 			if (g.stage == 0xF && g.stage_timer == 0) {
 				g.p.hunger_interval = shrink_25pct(g.p.hunger_interval);
@@ -147,18 +147,18 @@ bool check_events(void)
 		}
 		if (NIB(g.sleep_minutes, 1) != 0xF && NIB(g.sleep_minutes, 1) >= 4) {
 			g.sleep_minutes = 0xF0 | (g.sleep_minutes & 0xF);
-			add_care_mistake();                           /* luz ficou acesa */
+			add_care_mistake();                           /* light was left on */
 		}
 		return false;
 	}
 	cost_ms(6);
-	/* hora de dormir? */
+	/* bedtime? */
 	if (g.species == 1) {
 		if (g.nap != 0 && g.baby_awake == 0) return set_event(1);
 	} else if (hour >= g.p.bed_hour || hour < g.p.wake_hour) {
 		return set_event(1);
 	}
-	/* morte (comparações por nibble, como no original) */
+	/* death (nibble-wise comparisons, like the original) */
 	cost_ms(14);
 	{
 		bool dead = g.sick_count >= 3;
@@ -202,7 +202,7 @@ bool check_events(void)
 	return false;
 }
 
-/* ---------------------------------------------------------------- 0x307 eventos */
+/* ---------------------------------------------------------------- 0x307 events */
 
 static void ev_bedtime(void)                 /* 0x30C */
 {
@@ -218,7 +218,7 @@ static void ev_call(bool discipline)         /* 0x31C / 0x324 */
 	play_sound(SND_CALL, 8, 0);
 }
 
-static void ev_poop(void)                    /* 0x329: faz cocô */
+static void ev_poop(void)                    /* 0x329: poops */
 {
 	u8 saved = g.light;
 	g.light = 0xF;
@@ -247,7 +247,7 @@ void dispatch_event(void)
 	}
 }
 
-/* 0xFEC label_391: o ovo choca */
+/* 0xFEC label_391: the egg hatches */
 void hatch_egg(void)
 {
 	g.egg = 0xF;

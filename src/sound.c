@@ -1,14 +1,14 @@
 /*
- * Sequenciador do buzzer (0x1A0 configure_buzzer), executado a cada tick do prog timer.
+ * Buzzer sequencer (0x1A0 configure_buzzer), run on every prog timer tick.
  *
- * Os efeitos sonoros são tabelas na página E da ROM (0xE00 + ptr). Cada passo é:
- *   lbpx dur ; retd (env<<4 | freq)            -> passo linear (o ponteiro segue +2)
- *   lbpx dur ; lbpx (env<<4 | freq) ; retd ptr -> passo com salto (laço ou fim)
- * freq com bit3 = silêncio. ptr 0x7D = ocioso (silêncio que aponta para si mesmo).
+ * The sound effects are tables in page E of the ROM (0xE00 + ptr). Each step is:
+ *   lbpx dur ; retd (env<<4 | freq)            -> linear step (the pointer advances +2)
+ *   lbpx dur ; lbpx (env<<4 | freq) ; retd ptr -> step with a jump (loop or end)
+ * freq with bit3 = silence. ptr 0x7D = idle (silence that points to itself).
  */
 #include "tama.h"
 
-/* 0x0BF: dispara um som; repeat = nº de voltas nos saltos (hi=F => infinito) */
+/* 0x0BF: triggers a sound; repeat = number of loops on jumps (hi=F => infinite) */
 void play_sound(u8 ptr, u8 repeat_lo, u8 repeat_hi)
 {
 	if (!g.sound_on) { cost_ms(1.5); return; }
@@ -21,8 +21,8 @@ void play_sound(u8 ptr, u8 repeat_lo, u8 repeat_hi)
 
 void play_beep(void) { play_sound(SND_BEEP, 0, 0xF); }  /* 0x0BB (A=0) */
 
-/* Devolve o custo de CPU (ms) do caminho percorrido, que varia bastante (medido com -P):
- * contando um passo mudo 3,5; contando um tom 1,9; buscando o próximo passo ~7,4. */
+/* Returns the CPU cost (ms) of the path taken, which varies a lot (measured with -P):
+ * counting down a silent step 3.5; counting down a tone 1.9; fetching the next step ~7.4. */
 double sound_step(void)
 {
 	u8 step[3];
@@ -33,7 +33,7 @@ double sound_step(void)
 		if (g.snd_freq & 8) { front_set_buzzer(false, 0); return 3.48; }
 		return 1.92;
 	}
-	g.snd_dur--;                                  /* vira FF; será sobrescrito */
+	g.snd_dur--;                                  /* wraps to FF; will be overwritten */
 	for (;;) {
 		u8 p = g.snd_ptr;
 		g.snd_ptr = p + 2;
@@ -51,7 +51,7 @@ double sound_step(void)
 			g.snd_rep_hi = cnt >> 4;
 			if (!borrow) break;
 		}
-		g.snd_ptr = SND_IDLE;                     /* acabaram as repetições */
+		g.snd_ptr = SND_IDLE;                     /* the repetitions are over */
 	}
 	front_set_buzzer(!(g.snd_freq & 8), g.snd_freq);
 	return 7.4;

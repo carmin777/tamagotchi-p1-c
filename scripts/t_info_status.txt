@@ -1,6 +1,6 @@
-# t_hatch.txt - boot, acerta 08:00, vai ao ovo, espera chocar e deixa o bebe sozinho 20 min.
+# t_hatch.txt - boot, set 08:00, go to the egg, wait for hatching and leave the baby alone for 20 min.
 wait 4
-press M           # ajuste do relogio
+press M           # clock setting
 wait 2.3
 press L
 press L
@@ -10,36 +10,36 @@ press L
 press L
 press L
 press L           # 08:00 AM
-press R           # confirma
+press R           # confirm
 wait 3.3
-press M           # tela do pet (ovo)
-mark ovo
-wait 330.3        # bebe chocou
+press M           # pet screen (egg)
+mark egg
+wait 330.3        # baby hatched
 press L
 press L
 press L
 press L
 press L
-press L           # icone 6: status
-mark ini
-press M           # pagina 0: idade/peso
+press L           # icon 6: status
+mark start
+press M           # page 0: age/weight
 wait 1.2
 dump p0
-press L           # pagina 1: disciplina
+press L           # page 1: discipline
 wait 1.3
-press M           # pagina 2: fome
+press M           # page 2: hunger
 wait 1.4
-press L           # pagina 3: felicidade
+press L           # page 3: happiness
 wait 1.1
-press M           # volta a pagina 0
+press M           # back to page 0
 wait 1.5
-press R           # sai
+press R           # exits
 wait 2.2
-dump sai
-press M           # entra de novo no status (cursor mantido)
+dump exit
+press M           # enters the status again (cursor kept)
 wait 2.1
 press L
-wait 17           # timeout de 15 s
+wait 17           # 15 s timeout
 dump timeout
-mark fim
+mark end
 wait 3
