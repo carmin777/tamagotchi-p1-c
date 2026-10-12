@@ -1,0 +1,54 @@
+# t_hatch.txt - boot, acerta 08:00, vai ao ovo, espera chocar e deixa o bebe sozinho 20 min.
+wait 4
+press M           # ajuste do relogio
+wait 2.3
+press L
+press L
+press L
+press L
+press L
+press L
+press L
+press L           # 08:00 AM
+press R           # confirma
+wait 3.3
+press M           # tela do pet (ovo)
+mark ovo
+wait 310.3        # bebe chocou (~4 s depois da animacao)
+press L
+press L
+press L           # icone 3: jogo
+mark ini
+press M
+wait 3.1          # coracoes, rola ate o pet
+press L           # rodada 1
+wait 7.2
+press M           # rodada 2
+wait 7.2
+press L           # rodada 3
+wait 7.1
+press M           # rodada 4
+wait 7.2
+press M           # rodada 5
+wait 9.4          # resultado + animacao
+dump fim1
+press L           # partida 2 (comeca sozinha), rodada 1
+wait 7.3
+press M
+wait 7.1
+press L
+wait 7.2
+press L
+wait 7.4
+press M
+wait 9.3
+dump fim2
+wait 3.1
+press R           # sai no meio da partida 3
+wait 2.2
+dump sai
+press M           # entra de novo
+wait 20           # timeout de 15 s no palpite
+dump timeout
+mark fim
+wait 3

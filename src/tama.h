@@ -174,6 +174,11 @@ struct game {
 
 	/* --- campos adicionados por menu_care.c --- */
 	/* --- campos adicionados por menu_info.c --- */
+	u8 game_wait;          /* 0x080: quadros de espera depois do palpite */
+	u8 game_guess;         /* 0x081: palpite (bits BTN_*; 0 = ainda não) */
+	u8 game_rounds;        /* 0x082: rodadas restantes */
+	u8 game_wins;          /* 0x083: acertos */
+	u8 game_result;        /* 0x084: 8 = rodada vencida, 0 = perdida */
 	/* --- campos adicionados por life.c --- */
 };
 extern struct game g;

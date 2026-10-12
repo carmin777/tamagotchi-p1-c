@@ -74,12 +74,7 @@ static bool status_build_page(u8 *t)
 /* 0x0DE label_34: desenha os 8 tiles na página direita da vram e aponta a janela para ela */
 static void draw_tile_page(const u8 *t)
 {
-	int i;
-
-	/* o preâmbulo de 0x7A3/0x7A5 (busca do id) antes de apagar um tile em branco não
-	 * está no custo de draw_tile(>= 64); medido: ~2,5 ms por tile em branco + 2 ms fixos */
 	cost_ms(2);
-	for (i = 0; i < 8; i++) if (t[i] >= 0x40) cost_ms(2.5);
 	view_to_right();
 	g.draw_at = 0x40;
 	render_tile_list(0x40, t);
