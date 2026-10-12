@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>Tamagotchi P1</title>
+<style>
+  :root { color-scheme: light dark; --bg:#f2f0ea; --fg:#222; --btn:#d94f4f; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#1c1c1c; --fg:#ddd; } }
+  body { margin:0; background:var(--bg); color:var(--fg); font:16px system-ui,sans-serif;
+         display:flex; flex-direction:column; align-items:center; padding:16px; gap:16px; touch-action:manipulation; }
+  canvas { width:min(100%,416px); height:auto; image-rendering:pixelated; border-radius:12px; outline:none; display:none; }
+  #pick { text-align:center; max-width:420px; }
+  #btns { display:none; gap:20px; }
+  #btns button { width:76px; height:76px; border-radius:50%; border:0; background:var(--btn); color:#fff;
+                 font:bold 22px system-ui; user-select:none; -webkit-user-select:none; touch-action:none; }
+  small { opacity:.7; text-align:center; max-width:420px; }
+  button.link { background:none; border:0; color:inherit; text-decoration:underline; cursor:pointer; font:inherit; opacity:.7; }
+</style>
+</head>
+<body>
+<div id="pick">
+  <h1>Tamagotchi P1</h1>
+  <p>Reescrita em C do Tamagotchi P1. Para jogar, escolha o dump da ROM (<code>tama.b</code>, 12288 bytes).
+     Ele fica só no seu navegador, não é enviado a lugar nenhum.</p>
+  <input type="file" id="rom" accept=".b,.bin">
+  <p id="msg"></p>
+</div>
+<canvas id="canvas" tabindex="-1" oncontextmenu="event.preventDefault()"></canvas>
+<div id="btns"><button data-m="4">A</button><button data-m="2">B</button><button data-m="1">C</button></div>
+<small id="hint" style="display:none">Teclado: ← ↓ → ou A S D · F = 10x. O jogo salva sozinho neste navegador; com a aba fechada o tempo do pet para.
+  <br><button class="link" id="reset">apagar jogo e ROM</button></small>
+<script>
+var Module = {
+  noInitialRun: true,
+  canvas: document.getElementById('canvas'),
+  print: console.log, printErr: console.warn,
+  persist: function () { FS.syncfs(false, function (e) { if (e) console.warn(e); }); },
+};
+Module.preRun = [function () {
+  FS.mkdir('/save'); FS.mount(IDBFS, {}, '/save');
+  addRunDependency('idbfs');
+  FS.syncfs(true, function () { removeRunDependency('idbfs'); });
+}];
+Module.onRuntimeInitialized = function () {
+  var msg = document.getElementById('msg'), pick = document.getElementById('pick');
+  function start() {
+    pick.style.display = 'none';
+    document.getElementById('canvas').style.display = 'block';
+    document.getElementById('btns').style.display = 'flex';
+    document.getElementById('hint').style.display = 'block';
+    Module.callMain(['-r', '/save/rom.b', '-S', '/save/save.bin']);
+  }
+  document.getElementById('rom').onchange = function (ev) {
+    var f = ev.target.files[0]; if (!f) return;
+    f.arrayBuffer().then(function (buf) {
+      if (buf.byteLength !== 12288) { msg.textContent = 'Arquivo com ' + buf.byteLength + ' bytes; o esperado é 12288.'; return; }
+      FS.writeFile('/save/rom.b', new Uint8Array(buf));
+      FS.syncfs(false, function () { start(); });
+    });
+  };
+  if (FS.analyzePath('/save/rom.b').exists) start();
+  document.querySelectorAll('#btns button').forEach(function (b) {
+    var m = +b.dataset.m;
+    b.addEventListener('pointerdown', function (e) { e.preventDefault(); b.setPointerCapture(e.pointerId); Module._tama_button(m, 1); });
+    ['pointerup', 'pointercancel'].forEach(function (t) { b.addEventListener(t, function () { Module._tama_button(m, 0); }); });
+  });
+  document.addEventListener('visibilitychange', function () { if (document.hidden && Module._tama_save) Module._tama_save(); });
+  window.addEventListener('pagehide', function () { if (Module._tama_save) Module._tama_save(); });
+  document.getElementById('reset').onclick = function () {
+    if (!confirm('Apagar o jogo salvo e a ROM deste navegador?')) return;
+    ['rom.b', 'save.bin'].forEach(function (n) { try { FS.unlink('/save/' + n); } catch (e) {} });
+    FS.syncfs(false, function () { location.reload(); });
+  };
+};
+</script>
+{{{ SCRIPT }}}
+</body>
+</html>

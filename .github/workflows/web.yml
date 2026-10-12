@@ -1,0 +1,17 @@
+name: Web
+on: [push, workflow_dispatch]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: mymindstorm/setup-emsdk@v14
+      - name: Compilar (WebAssembly)
+        run: make -C src wasm
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tamagotchi-p1-web
+          path: |
+            web/index.html
+            web/index.js
+            web/index.wasm

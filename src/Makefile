@@ -12,5 +12,11 @@ tama: $(CORE) front_sdl.c tama.h
 tama-headless: $(CORE) front_headless.c tama.h
 	$(CC) $(CFLAGS) -o $@ $(CORE) front_headless.c
 
+# Navegador: make -C src wasm   (precisa do Emscripten; gera web/index.html + .js/.wasm)
+wasm: $(CORE) front_sdl.c tama.h ../web/shell.html
+	emcc -O2 -Wall -Wno-unused-parameter -sUSE_SDL=2 -sASYNCIFY -sALLOW_MEMORY_GROWTH -lidbfs.js \
+	  -sEXPORTED_FUNCTIONS=_main,_tama_button,_tama_save -sEXPORTED_RUNTIME_METHODS=callMain,FS \
+	  --shell-file ../web/shell.html -o ../web/index.html $(CORE) front_sdl.c
+
 clean:
 	rm -f tama-headless tama

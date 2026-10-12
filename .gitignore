@@ -7,3 +7,6 @@ out/
 src/tama-headless
 src/tama
 harness/trace
+web/index.html
+web/index.js
+web/index.wasm

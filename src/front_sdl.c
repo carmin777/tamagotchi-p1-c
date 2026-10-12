@@ -13,6 +13,9 @@
 #include <string.h>
 #include <signal.h>
 #include <SDL.h>
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
 #ifdef HAVE_SDL_IMAGE
 #include <SDL_image.h>
 #endif
@@ -116,6 +119,21 @@ static u8 key_button(SDL_Keycode k)
 	return 0;
 }
 
+#ifdef __EMSCRIPTEN__
+/* no navegador não há "fechar": salva a cada poucos segundos e quando a aba some;
+ * syncfs persiste o sistema de arquivos (IDBFS) no IndexedDB */
+EMSCRIPTEN_KEEPALIVE void tama_save(void)
+{
+	if (save_path[0] && machine_save(save_path))
+		EM_ASM(if (Module.persist) Module.persist(););
+}
+
+EMSCRIPTEN_KEEPALIVE void tama_button(int mask, int down)   /* botões na tela (toque) */
+{
+	if (down) front_buttons |= mask; else front_buttons &= ~mask;
+}
+#endif
+
 static void quit(void)
 {
 	if (save_path[0] && !machine_save(save_path))
@@ -130,6 +148,13 @@ void front_pump(double t)
 	SDL_Event e;
 
 	if (want_quit) quit();
+#ifdef __EMSCRIPTEN__
+	{
+		static double last_save, last_yield;
+		if (wall() - last_save > 10) { last_save = wall(); tama_save(); }
+		if (wall() - last_yield > 0.016) { last_yield = wall(); emscripten_sleep(0); }  /* devolve o controle ao navegador */
+	}
+#endif
 	/* não deixa o tempo emulado passar à frente do relógio real */
 	for (;;) {
 		double ahead = (t - emu0) / speed - (wall() - wall0);
