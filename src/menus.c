@@ -32,6 +32,12 @@ int menu_poll(void)
 void run_menu_item(u8 cursor)
 {
 	switch (cursor) {
-	default: /* TODO */ break;
+	case 1: menu_food(); break;
+	case 2: menu_light(); break;
+	case 3: menu_game(); break;
+	case 4: menu_medicine(); break;
+	case 5: menu_toilet(); break;
+	case 6: menu_status(); break;
+	case 7: menu_discipline(); break;
 	}
 }

@@ -169,6 +169,10 @@ struct game {
 	u8 baby_awake;         /* 0x216/0x217 (Babytchi) */
 	struct species_params p; /* 0x230-0x249 */
 	u8 clock_backup[3];    /* 0x272-0x277 */
+
+	/* --- campos adicionados por menu_care.c --- */
+	/* --- campos adicionados por menu_info.c --- */
+	/* --- campos adicionados por life.c --- */
 };
 extern struct game g;
 
@@ -201,6 +205,26 @@ void dispatch_event(void);      /* 0x307 */
 void init_new_game_state(void); /* 0x761 */
 void load_species_params(void); /* 0xDD2 (parte) */
 void hatch_egg(void);           /* 0xFEC */
+
+/* menu_care.c: comida, luz, remédio, banheiro, disciplina */
+void menu_food(void);           /* 0x710 */
+void menu_light(void);          /* 0xABE */
+void menu_medicine(void);       /* 0x600 */
+void menu_toilet(void);         /* 0xD7E */
+void menu_discipline(void);     /* 0xADA */
+u8 menu_choose_option(const u8 *tiles); /* 0xE5A (assinatura pode mudar) */
+
+/* menu_info.c: status e jogo */
+void menu_status(void);         /* 0x814 */
+void menu_game(void);           /* 0x624 */
+
+/* life.c: evolução, morte, reset, teste de fábrica, dissolve */
+void ev_evolve(void);           /* 0x34B */
+void ev_death(void);            /* 0x374 */
+void factory_lcd_test(void);    /* 0x256 */
+void screen_dissolve(void);     /* 0x906 */
+
+void play_overlay_anim(u8 anim_set, u8 seconds, u8 script); /* 0x8A9 (anim.c) */
 
 /* menus.c */
 void menu_init(u8 limit, u8 timeout); /* 0x1EC */

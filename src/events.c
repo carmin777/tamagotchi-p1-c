@@ -4,7 +4,6 @@
  */
 #include "tama.h"
 
-void play_overlay_anim(u8 anim_set, u8 seconds, u8 script);
 
 /* 0x761 label_232 */
 void init_new_game_state(void)
@@ -243,8 +242,8 @@ void dispatch_event(void)
 	case 2: ev_call(false); break;
 	case 3: ev_call(true); break;
 	case 4: ev_poop(); break;
-	case 5: /* TODO 0x34B evolução */ break;
-	case 6: /* TODO 0x374 morte */ break;
+	case 5: ev_evolve(); break;
+	case 6: ev_death(); break;
 	}
 }
 
