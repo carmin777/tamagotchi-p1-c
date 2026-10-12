@@ -215,7 +215,9 @@ void menu_light(void);          /* 0xABE */
 void menu_medicine(void);       /* 0x600 */
 void menu_toilet(void);         /* 0xD7E */
 void menu_discipline(void);     /* 0xADA */
-u8 menu_choose_option(const u8 *tiles); /* 0xE5A (assinatura pode mudar) */
+/* 0xE5A: menu de 2 opções; devolve 0/1 (confirmou), CHOICE_CANCEL (R) ou CHOICE_IDLE (timeout/evento) */
+enum { CHOICE_CANCEL = -1, CHOICE_IDLE = -2 };
+int menu_choose_option(const u8 *tiles, u8 timeout);
 
 /* menu_info.c: status e jogo */
 void menu_status(void);         /* 0x814 */

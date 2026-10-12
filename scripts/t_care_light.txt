@@ -1,0 +1,44 @@
+# t_care_light.txt - bebe: luz. Apaga, confirma apagada, acende; R cancela; timeout.
+# R cancela, depois timeout do seletor e do menu.
+wait 4
+press M           # ajuste do relogio
+wait 2.3
+press L
+press L
+press L
+press L
+press L
+press L
+press L
+press L           # 08:00 AM
+press R           # confirma
+wait 3.3
+press M           # tela do pet (ovo)
+mark ovo
+wait 330          # ovo choca ~5 min depois de o relogio andar
+wait 10.55
+dump antes
+press L
+press L           # icone luz
+press M           # seletor (cursor em ON)
+mark luz
+press L           # -> OFF
+press M           # apaga
+wait 3.0
+dump apagada
+press M           # seletor (cursor em OFF; o icone continua na luz)
+press M           # OFF de novo
+wait 3.0
+press M           # seletor
+press L           # -> ON
+press M           # acende
+wait 3.0
+dump acesa
+press M           # seletor
+press L           # -> OFF
+press R           # cancela (luz continua acesa)
+wait 3.0
+press M           # seletor de novo
+wait 12.5           # timeout do seletor
+wait 12.5           # timeout do menu
+dump fim

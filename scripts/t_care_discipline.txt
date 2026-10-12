@@ -1,0 +1,71 @@
+# t_care_discipline.txt - bebe: disciplina sem chamado (so a careta); depois, durante o cochilo
+# (~2700-3000 s), disciplina/banheiro/remedio/comida nao fazem nada e a luz apaga (Z no escuro).
+# R cancela, depois timeout do seletor e do menu.
+wait 4
+press M           # ajuste do relogio
+wait 2.3
+press L
+press L
+press L
+press L
+press L
+press L
+press L
+press L           # 08:00 AM
+press R           # confirma
+wait 3.3
+press M           # tela do pet (ovo)
+mark ovo
+wait 330          # ovo choca ~5 min depois de o relogio andar
+wait 10.55
+dump antes
+press L
+press L
+press L
+press L
+press L
+press L
+press L           # icone disciplina
+press M           # sem chamado: careta
+mark careta
+wait 6.0
+dump careta
+wait 2460         # cochilo do bebe
+dump dormindo
+mark dormindo
+press L
+press L
+press L
+press L
+press L
+press L
+press L
+press M           # icone 7 dormindo: nada
+wait 1.0
+press R
+press L
+press L
+press L
+press L
+press L
+press M           # icone 5 dormindo: nada
+wait 1.0
+press R
+press L
+press L
+press L
+press L
+press M           # icone 4 dormindo: nada
+wait 1.0
+press R
+press L
+press M           # icone 1 dormindo: nada
+wait 1.0
+press R
+press L
+press L           # luz
+press M           # seletor
+press L           # -> OFF
+press M           # apaga
+wait 4.0
+dump escuro
