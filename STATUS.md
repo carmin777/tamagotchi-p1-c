@@ -22,7 +22,7 @@
     `t_care_light`); o pisca de 0,2 s do ícone de atenção na virada do minuto é uma corrida.
 - Não testado: morte por velhice (anjo).
 
-## Errata das notas de RE (re/notes) — o código está certo, as notas não
+## Errata das notas de RE (re/notes) — já corrigida nas notas em 2026-10-12
 - Botões em RAM: bit0=R, bit1=M, bit2=L (notas 0x000 e 0x800 dizem L=bit0).
 - 0x5D = espécie, 0x50 = estágio; 0x4A bit3 = dormindo (não "morto"); evento 4 = cocô.
 - O prog timer roda livre a 256/7 Hz (27,34 ms); a ISR de 1 Hz não reinicia a fase.
