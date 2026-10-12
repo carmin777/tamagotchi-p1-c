@@ -22,8 +22,10 @@ make -C src            # precisa de SDL2 (SDL2_image é opcional, para os ícone
 ./tama-nativo          # ou: src/tama -r rom/tama.b
 ```
 
+- **Windows:** o workflow `.github/workflows/windows.yml` compila com MSYS2 e publica `tamagotchi-p1.exe` + `SDL2.dll`
+  como artefato (aba Actions). Coloque `tama.b` ao lado do `.exe` (ou em `rom\`). Ainda não testado em Windows real.
 - ← ↓ → (ou A S D): botões A (seleciona), B (confirma), C (cancela). F alterna 1x/10x.
-- O jogo salva ao fechar em `~/.local/share/tamagotchi-p1/save.bin` (`-n` começa do zero).
+- O jogo salva ao fechar em `~/.local/share/tamagotchi-p1/save.bin` (Windows: `%APPDATA%\tamagotchi-p1\save.bin`; `-n` começa do zero).
   Com o programa fechado o tempo do pet para.
 - Os ícones da carcaça vêm de `tamatool/res/p1-icons.png` ([TamaTool](https://github.com/jcrona/tamatool),
   clone ao lado) ou de `-i arquivo.png`; sem eles, aparecem quadrados.

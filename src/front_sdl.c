@@ -3,14 +3,14 @@
  *
  * Teclas: ← ou A = botão L (seleciona), ↓ ou S = M (confirma), → ou D = R (cancela).
  *         F = alterna velocidade 1x / 10x.  Fechar a janela salva o jogo.
- * O jogo salvo fica em ~/.local/share/tamagotchi-p1/save.bin (ou -S arquivo). Com o
+ * O jogo salvo fica na pasta de preferências do SDL (Linux: ~/.local/share/tamagotchi-p1/save.bin;
+ * Windows: %APPDATA%\tamagotchi-p1\save.bin) ou em -S arquivo. Com o
  * aplicativo fechado o tempo do pet para (como no TamaTool), já que o original não
  * tem relógio de tempo real fora do CPU.
  */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/stat.h>
 #include <signal.h>
 #include <SDL.h>
 #ifdef HAVE_SDL_IMAGE
@@ -169,18 +169,31 @@ int main(int argc, char **argv)
 			return 1;
 		}
 	}
+	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0) { fprintf(stderr, "SDL: %s\n", SDL_GetError()); return 1; }
 	if (!rom) rom = getenv("TAMA_ROM") ? getenv("TAMA_ROM") : "rom/tama.b";
-	if (!rom_load(rom)) { fprintf(stderr, "não consegui ler a ROM %s\n", rom); return 1; }
-	if (!save_path[0] && getenv("HOME")) {
-		char dir[900];
-		snprintf(dir, sizeof(dir), "%s/.local/share/tamagotchi-p1", getenv("HOME"));
-		mkdir(dir, 0755);
-		snprintf(save_path, sizeof(save_path), "%s/save.bin", dir);
+	if (!rom_load(rom)) {
+		/* sem -r: tenta também ao lado do executável (duplo clique no Windows) */
+		char *base = SDL_GetBasePath();
+		char alt[1100];
+		bool ok = false;
+		if (base) {
+			snprintf(alt, sizeof(alt), "%srom/tama.b", base);
+			ok = rom_load(alt);
+			if (!ok) { snprintf(alt, sizeof(alt), "%stama.b", base); ok = rom_load(alt); }
+			SDL_free(base);
+		}
+		if (!ok) { fprintf(stderr, "não consegui ler a ROM %s (coloque tama.b ao lado do programa ou use -r)\n", rom); return 1; }
+	}
+	if (!save_path[0]) {
+		char *pref = SDL_GetPrefPath("", "tamagotchi-p1");   /* cria a pasta se preciso */
+		if (pref) {
+			snprintf(save_path, sizeof(save_path), "%ssave.bin", pref);
+			SDL_free(pref);
+		}
 	}
 
 	signal(SIGINT, on_signal);
 	signal(SIGTERM, on_signal);
-	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0) { fprintf(stderr, "SDL: %s\n", SDL_GetError()); return 1; }
 	win = SDL_CreateWindow("Tamagotchi P1", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WIN_W, WIN_H, 0);
 	ren = SDL_CreateRenderer(win, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 	if (!ren) ren = SDL_CreateRenderer(win, -1, 0);
