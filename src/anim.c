@@ -17,7 +17,7 @@ void reset_pet_animation(void)
 	u8 sprites = rom_byte(0xA00 + idx);    /* tabela pose->sprites */
 	u8 scripts = rom_byte(0xB00 + idx);    /* lo = script de pose, hi = script de movimento */
 
-	cost_ms(4.0);
+	cost_ms(8.1);
 	g.pose_timer = 0;
 	g.move_count = 0;
 	g.sprite_a = sprites & 0xF;
@@ -171,7 +171,7 @@ void play_overlay_anim(u8 anim_set, u8 seconds, u8 script)
 	for (;;) {
 		vram_clear();
 		step_pet_animation();
-		cost_ms(15);
+		cost_ms(30);
 		if (hold == 0) {
 			u8 b[3];
 			int n = rom_table(0xE00 + ptr, b, 3);

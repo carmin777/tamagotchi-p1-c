@@ -97,6 +97,7 @@ void scroll_view_left(u8 step)
 
 	do {
 		lcd_present();
+		cost_ms(4);
 		lo = (g.view & 0xF) + step;
 		hi = (g.view >> 4) + 0xF + (lo >> 4);
 		g.view = ((hi & 0xF) << 4) | (lo & 0xF);

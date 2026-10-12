@@ -52,3 +52,8 @@ emulador TamaLIB: o mesmo script de input tem que produzir a mesma sequência de
   4. `tools/frames.py arq T0 T1 [--full]` lista/mostra frames.
 - Corridas: input exatamente na virada do segundo pode dar resultado diferente; nos scripts,
   evite apertar botões perto de x,0 s do relógio do jogo.
+- O ritmo do laço do pet deriva ~1% do original. Duas pressões que caem na mesma volta do laço
+  (0,35–0,47 s) viram uma só leitura; por isso, nos scripts de teste, espace as pressões ≥ 1 s
+  (`press X` + `wait 0.6`), senão o resultado depende da fase do laço e não da lógica.
+- `tools/validate.sh [padrão]` roda todos os scripts nos dois lados e resume ram/som/frames.
+  `0x05A rng` pode diferir em 1 num dump que caia exatamente num tick (artefato do dump).

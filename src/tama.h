@@ -49,7 +49,7 @@ enum {
 };
 void play_sound(u8 ptr, u8 repeat_lo, u8 repeat_hi); /* 0x0BF: só se g.sound_on */
 void play_beep(void);                                 /* 0x0BB */
-void sound_step(void);                                /* 0x1A0, chamado a cada tick */
+double sound_step(void);                              /* 0x1A0, a cada tick; devolve custo (ms) */
 
 /* ---------------------------------------------------------------- vídeo (video.c) */
 /* Buffer de vídeo = RAM 0x100–0x1FF (256 nibbles): 64 colunas x 16 linhas.
@@ -199,10 +199,11 @@ void select_pet_anim_set(void); /* 0x596 */
 void draw_pet_half(u8 frame, u8 flip, bool lower); /* 0x928 / 0x939 */
 
 /* screens.c */
-enum screen { SCR_BOOT_WAIT, SCR_SET_CLOCK, SCR_CLOCK, SCR_PET };
+enum screen { SCR_BOOT_WAIT, SCR_SET_CLOCK, SCR_CLOCK, SCR_PET, SCR_PET_MENU };
 enum screen boot_wait_for_start(void); /* 0x97F */
 enum screen clock_screen(void);        /* 0x293 */
 enum screen pet_screen(void);          /* 0x508 */
+enum screen pet_menu_loop(void);       /* 0x512 */
 void soft_reset(void);                 /* 0x206: novo ovo mantendo o relógio */
 u8 draw_clock(void);            /* 0x5A6 */
 

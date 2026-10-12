@@ -12,11 +12,12 @@
  *  - prog timer (0x16F): 256 Hz / 7, livre => tick a cada 7/256 s (27,34 ms; 36,57/s).
  *    (A ISR de 1 Hz escreve F78=1, mas isso só o mantém ligado: não reinicia a fase.)
  */
+#include <stdio.h>
+#include <stdlib.h>
 #include "tama.h"
 
 #define PROG_PERIOD (7.0 / 256.0)
-#define PROG_ISR_COST_MUTED 0.0127 /* CPU da ISR do prog timer com o buzzer mudo (passa por buzzer_off) */
-#define PROG_ISR_COST_TONE 0.0109  /* ... e tocando um tom */
+#define PROG_ISR_BASE 0.00894     /* CPU da ISR do prog timer, fora o sequenciador de som */
 #define CLOCK_ISR_COST 0.0075
 #define MINUTE_TICK_COST 0.0060
 
@@ -77,16 +78,17 @@ bool machine_load(const char *path)
 	return ok;
 }
 
-/* ---- 0x16F prog_timer_int: som, aleatório, espera, botões ---- */
-static void prog_timer_int(void)
+/* ---- 0x16F prog_timer_int: som, aleatório, espera, botões. Devolve o custo de CPU (s) ---- */
+static double prog_timer_int(void)
 {
 	u8 down, prev;
+	double snd = sound_step() / 1000.0;   /* 0x1A0 configure_buzzer vem primeiro */
 
-	sound_step();                         /* 0x1A0 configure_buzzer */
+	front_pump(now + snd);                /* os botões (0x17C) são lidos depois dele */
 	g.rng = (g.rng + 1) & 0xF;            /* 0x05A */
 	if (g.delay) g.delay--;               /* 0x022/0x023 */
 
-	down = front_buttons & 7;
+	down = front_buttons & 7;             /* botões ativos-baixos na porta K0 */
 	prev = g.btn_down;
 	g.btn_down = down;
 	g.btn_edges |= (prev ^ down) & down;  /* apertos (bordas de subida) */
@@ -100,6 +102,7 @@ static void prog_timer_int(void)
 		g.btn_edges |= down & g.rep_mask;
 	}
 	g.rep_count &= 0xF;
+	return PROG_ISR_BASE + snd;
 }
 
 /* ---- 0x11D clock_timer_int: relógio e tique de minuto ---- */
@@ -140,9 +143,8 @@ static void service_interrupts(void)
 			now += CLOCK_ISR_COST;
 		} else {
 			next_prog += PROG_PERIOD;
-			prog_timer_int();
 			isr_count++;
-			now += (g.snd_freq & 8) ? PROG_ISR_COST_MUTED : PROG_ISR_COST_TONE;
+			now += prog_timer_int();
 		}
 	}
 }
@@ -177,5 +179,6 @@ void read_buttons(void)
 	cost_ms(7.4);
 	g.btn_held = g.btn_down;
 	g.btn_pressed = g.btn_edges;
+	if (g.btn_pressed && getenv("TAMA_TRACE")) fprintf(stderr, "%.3f 029=%X\n", now, g.btn_pressed);
 	g.btn_edges = 0;
 }

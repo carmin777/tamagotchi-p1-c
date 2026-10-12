@@ -21,15 +21,17 @@ void play_sound(u8 ptr, u8 repeat_lo, u8 repeat_hi)
 
 void play_beep(void) { play_sound(SND_BEEP, 0, 0xF); }  /* 0x0BB (A=0) */
 
-void sound_step(void)
+/* Devolve o custo de CPU (ms) do caminho percorrido, que varia bastante (medido com -P):
+ * contando um passo mudo 3,5; contando um tom 1,9; buscando o próximo passo ~7,4. */
+double sound_step(void)
 {
 	u8 step[3];
 	int n;
 
 	if (g.snd_dur != 0) {
 		g.snd_dur--;
-		if (g.snd_freq & 8) goto off;
-		return;
+		if (g.snd_freq & 8) { front_set_buzzer(false, 0); return 3.48; }
+		return 1.92;
 	}
 	g.snd_dur--;                                  /* vira FF; será sobrescrito */
 	for (;;) {
@@ -51,9 +53,6 @@ void sound_step(void)
 		}
 		g.snd_ptr = SND_IDLE;                     /* acabaram as repetições */
 	}
-	if (g.snd_freq & 8) goto off;
-	front_set_buzzer(true, g.snd_freq);
-	return;
-off:
-	front_set_buzzer(false, 0);
+	front_set_buzzer(!(g.snd_freq & 8), g.snd_freq);
+	return 7.4;
 }

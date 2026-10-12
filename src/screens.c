@@ -72,7 +72,8 @@ static void init_mem_and_int(void)
 	g.clock_running = 0;
 	g.skippable = 0;
 	g.egg = 5;                     /* ovo: 5 minutos */
-	prog_timer_start();
+	cost_ms(67);                   /* limpar ~400 nibbles de RAM/VRAM e programar o I/O */
+	prog_timer_start();            /* F78=1: no boot a frio isso acontece em t ~ 0,097 s */
 }
 
 static enum screen set_clock_screen(void);
@@ -85,6 +86,7 @@ static enum screen run_screen(enum screen s)
 	case SCR_SET_CLOCK: return set_clock_screen();
 	case SCR_CLOCK:     return clock_screen();
 	case SCR_PET:       return pet_screen();
+	case SCR_PET_MENU:  return pet_menu_loop();
 	}
 	return SCR_BOOT_WAIT;
 }
@@ -93,13 +95,15 @@ static enum screen run_screen(enum screen s)
 void game_main(void)
 {
 	enum screen s;
+	u8 k0;
 
 	cost_ms(30);
+	k0 = front_buttons & 7;                   /* 0x235: M[0x270] = K0 cru */
 	init_mem_and_int();
-	cost_ms(60);
+	cost_ms(25);
 	play_sound(SND_BOOT, 0, 0xF);
-	/* TODO 0x256: teste de LCD de fábrica (L segurado no reset) */
-	s = setjmp(soft_reset_point) ? SCR_PET : SCR_BOOT_WAIT;
+	if (k0 == BTN_L) factory_lcd_test();      /* 0x23E: só L segurado */
+	s = setjmp(soft_reset_point) ? SCR_PET_MENU : SCR_BOOT_WAIT;   /* soft_reset -> 0x517 */
 	for (;;) s = run_screen(s);
 }
 
@@ -219,7 +223,12 @@ enum screen pet_screen(void)
 	step_pet_animation();
 	draw_pet_overlays();
 	scroll_view_left(0xC);
+	return pet_menu_loop();
+}
 
+/* 0x512: laço do menu do pet (soft_reset entra aqui, em 0x517, com o ovo ainda em 5) */
+enum screen pet_menu_loop(void)
+{
 	for (;;) {
 		if (g.egg == 0) hatch_egg();
 		g.menu_saved = 0;
@@ -255,12 +264,6 @@ menu:
 			vram_clear();
 			select_pet_anim_set();
 			render_pet_frame();
-			if (getenv("TAMA_DEBUG")) {
-				extern double cpu_total_ms; extern unsigned long isr_count;
-				static double t0, c0; static unsigned long i0;
-				fprintf(stderr, "iter wall=%.1f cpu=%.1f isr=%lu\n", (machine_now() - t0) * 1000, cpu_total_ms - c0, isr_count - i0);
-				t0 = machine_now(); c0 = cpu_total_ms; i0 = isr_count;
-			}
 		}
 	}
 }
@@ -271,6 +274,6 @@ void game_resume(void)
 {
 	volatile enum screen s = SCR_PET;
 
-	setjmp(soft_reset_point);
+	if (setjmp(soft_reset_point)) s = SCR_PET_MENU;
 	for (;;) s = run_screen(s);
 }
