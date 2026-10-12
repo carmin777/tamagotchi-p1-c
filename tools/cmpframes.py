@@ -22,7 +22,7 @@ def load(path, until):
             if cur is not None:
                 frames.append((t, ''.join(cur)))
             t, cur = float(line[1:].split()[0]), []
-        elif line.startswith('##'):
+        elif line.startswith('## '):
             continue
         elif cur is not None:
             cur.append(line)

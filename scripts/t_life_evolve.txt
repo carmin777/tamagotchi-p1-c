@@ -1,0 +1,23 @@
+# t_life_evolve.txt - boot, 08:00, ovo choca (~316 s) e o Babytchi, sem cuidados, evolui
+# para Marutchi 60 min depois (~4219 s): som, dissolve, animação, dissolve, nova forma.
+wait 4
+press M           # ajuste do relogio
+wait 2.3
+press L
+press L
+press L
+press L
+press L
+press L
+press L
+press L           # 08:00 AM
+press R           # confirma
+wait 3.3
+press M           # tela do pet (ovo)
+mark ovo
+wait 4180
+dump antes
+mark evolui
+wait 30
+dump depois
+wait 30

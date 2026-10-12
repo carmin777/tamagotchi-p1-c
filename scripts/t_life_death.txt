@@ -1,0 +1,41 @@
+# t_life_death.txt - boot, 08:00, ovo, Babytchi sem cuidados adoece (~3310 s) e evolui para
+# Marutchi; doente por 0x160 min => morte (~24430 s): animação, lápide, R mostra a idade,
+# R volta, L+R segurados = soft reset (novo ovo, relógio mantido).
+wait 4
+press M           # ajuste do relogio
+wait 2.3
+press L
+press L
+press L
+press L
+press L
+press L
+press L
+press L           # 08:00 AM
+press R           # confirma
+wait 3.3
+press M           # tela do pet (ovo)
+mark ovo
+wait 24380
+dump antes
+mark morte        # evento 6 em ~24430 s; 6 animações de 10 s; lápide em ~24492 s
+wait 110.3
+mark lapide
+press R           # mostra a idade
+wait 3
+press R           # volta à lápide
+wait 3
+wait 0.4          # (longe da virada do segundo: o reset para o relógio por ~0,2 s)
+mark reset
+down L            # L+R segurados => soft reset
+wait 0.2
+down R
+wait 1
+up L
+up R
+wait 4
+dump depois       # novo ovo, relógio mantido
+press M           # vai ao relógio
+wait 4
+press M           # volta ao pet
+wait 5

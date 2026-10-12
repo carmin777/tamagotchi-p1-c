@@ -1,0 +1,14 @@
+# t_life_factory.txt - L segurado no boot => teste de LCD de fabrica (0x256):
+# 4 padroes, cada um espera um botao exato (M, R, L, M); depois a partida normal (ovo).
+hold L 2
+wait 1
+hold M 0.5        # padrao 1 (tudo aceso) -> 2
+wait 1
+hold R 0.5        # padrao 2 -> 3
+wait 1
+hold L 0.5        # padrao 3 -> 4 (moldura)
+wait 1
+hold M 0.5        # -> partida normal (ovo)
+wait 3
+press M           # acerto do relogio
+wait 2

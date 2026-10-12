@@ -12,6 +12,6 @@ def flush():
 for l in open(path):
     if l.startswith('@'):
         flush(); t = float(l[1:].split()[0]); cur = []
-    elif not l.startswith('##') and t is not None:
+    elif not l.startswith('## ') and t is not None:
         cur.append(l)
 flush()

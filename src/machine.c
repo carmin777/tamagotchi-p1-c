@@ -149,12 +149,19 @@ static void service_interrupts(void)
 	}
 }
 
+/* Flag I do CPU (rst f / set f / ei): desligada, as interrupções vencidas ficam pendentes
+ * até irq_enable(). Só o soft reset (0x206-0x219, life.c) usa. */
+static bool irq_off;
+void irq_disable(void) { irq_off = true; }
+void irq_enable(void) { irq_off = false; service_interrupts(); }
+
 /* O código principal precisa de `ms` de CPU; as interrupções intercalam */
 void cost_ms(double ms)
 {
 	double left = ms / 1000.0;
 
 	cpu_total_ms += ms;
+	if (irq_off) { now += left; front_pump(now); return; }
 
 	for (;;) {
 		double next = next_clock < next_prog ? next_clock : next_prog;

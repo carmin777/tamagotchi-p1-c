@@ -60,7 +60,9 @@ static void load_script(FILE *f)
 			u8 b = parse_btn(a1);
 			add(t, EV_DOWN, b, NULL); t += atof(a2);
 			add(t, EV_UP, b, NULL);
-		} else if (!strcmp(cmd, "mark")) {
+		} else if (!strcmp(cmd, "down")) add(t, EV_DOWN, parse_btn(a1), NULL);
+		else if (!strcmp(cmd, "up")) add(t, EV_UP, parse_btn(a1), NULL);
+		else if (!strcmp(cmd, "mark")) {
 			char *m = line + strlen("mark");
 			while (*m == ' ') m++;
 			m[strcspn(m, "\n")] = 0;

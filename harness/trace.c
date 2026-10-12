@@ -14,6 +14,7 @@
  *   wait <seg>          avança o tempo emulado
  *   press <L|M|R>       aperta 0,15 s e solta, depois espera 0,35 s
  *   hold <L|M|R> <seg>  segura o botão pelo tempo dado
+ *   down/up <L|M|R>     aperta / solta (sem avançar o tempo; p/ combinações como L+R)
  *   frame               força a gravação do frame atual
  *   dump [rótulo]       grava a RAM 0x000-0x2FF em ram.txt
  *   mark <texto>        escreve um marcador em frames.txt e writes.tsv
@@ -218,6 +219,10 @@ static void run_script(FILE *f)
 			tamalib_set_button(b, BTN_STATE_PRESSED);
 			run_for(atof(a2));
 			tamalib_set_button(b, BTN_STATE_RELEASED);
+		} else if (!strcmp(cmd, "down")) {        /* segura até "up" (p/ combinações, ex. L+R) */
+			tamalib_set_button(parse_btn(a1), BTN_STATE_PRESSED);
+		} else if (!strcmp(cmd, "up")) {
+			tamalib_set_button(parse_btn(a1), BTN_STATE_RELEASED);
 		} else if (!strcmp(cmd, "frame")) {
 			emit_frame(1);
 		} else if (!strcmp(cmd, "dump")) {
