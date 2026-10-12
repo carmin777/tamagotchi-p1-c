@@ -52,4 +52,4 @@ jogo de adivinhar e a leitura de botões apertados a menos de 1 s um do outro. D
 ## Licença
 
 GPL-2.0-or-later (o harness inclui o TamaLIB, GPL). Tamagotchi é marca da Bandai; este projeto
-não é afiliado à Bandai e não distribui nenhum código ou dado da ROM.
+não é afiliado à Bandai e não inclui a ROM (as notas de `re/` citam alguns valores de tabelas, como documentação).
