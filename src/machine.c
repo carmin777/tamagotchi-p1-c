@@ -40,6 +40,44 @@ void machine_reset(void)
 
 void prog_timer_start(void) { next_prog = now + PROG_PERIOD; }
 
+/* ---- salvar / carregar (só o front-end SDL usa) ---- */
+#include <stdio.h>
+#include <string.h>
+
+#define SAVE_MAGIC "TAMAP1R"
+#define SAVE_VERSION 1
+
+bool machine_save(const char *path)
+{
+	FILE *f = fopen(path, "wb");
+	int v = SAVE_VERSION * 100000 + (int) sizeof(g);   /* muda se a struct mudar */
+	bool ok;
+
+	if (!f) return false;
+	ok = fwrite(SAVE_MAGIC, 8, 1, f) == 1 && fwrite(&v, sizeof(v), 1, f) == 1 &&
+	     fwrite(&g, sizeof(g), 1, f) == 1 && fwrite(vram, sizeof(vram), 1, f) == 1 &&
+	     fwrite(&now, sizeof(now), 1, f) == 1 && fwrite(&next_clock, sizeof(next_clock), 1, f) == 1 &&
+	     fwrite(&next_prog, sizeof(next_prog), 1, f) == 1;
+	return fclose(f) == 0 && ok;
+}
+
+bool machine_load(const char *path)
+{
+	FILE *f = fopen(path, "rb");
+	char magic[8];
+	int v;
+	bool ok;
+
+	if (!f) return false;
+	ok = fread(magic, 8, 1, f) == 1 && !memcmp(magic, SAVE_MAGIC, 8) &&
+	     fread(&v, sizeof(v), 1, f) == 1 && v == SAVE_VERSION * 100000 + (int) sizeof(g) &&
+	     fread(&g, sizeof(g), 1, f) == 1 && fread(vram, sizeof(vram), 1, f) == 1 &&
+	     fread(&now, sizeof(now), 1, f) == 1 && fread(&next_clock, sizeof(next_clock), 1, f) == 1 &&
+	     fread(&next_prog, sizeof(next_prog), 1, f) == 1;
+	fclose(f);
+	return ok;
+}
+
 /* ---- 0x16F prog_timer_int: som, aleatório, espera, botões ---- */
 static void prog_timer_int(void)
 {

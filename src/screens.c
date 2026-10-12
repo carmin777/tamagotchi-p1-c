@@ -264,3 +264,13 @@ menu:
 		}
 	}
 }
+
+/* Retoma um jogo salvo (front_sdl.c): o original não tem isso — o estado volta e o jogo
+ * continua na tela do pet, como depois de um evento. */
+void game_resume(void)
+{
+	volatile enum screen s = SCR_PET;
+
+	setjmp(soft_reset_point);
+	for (;;) s = run_screen(s);
+}

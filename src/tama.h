@@ -38,6 +38,8 @@ void cost_ms(double ms);          /* consome tempo de CPU (dispara as "interrup�
 void wait_ticks(u8 n);            /* 0x03C: espera n ticks do prog timer (27,25 ms) */
 void read_buttons(void);          /* 0x021: snapshot em g.btn_held / g.btn_pressed */
 double machine_now(void);         /* tempo emulado em segundos */
+bool machine_save(const char *path);  /* estado do jogo + vram + relógio emulado */
+bool machine_load(const char *path);
 
 /* Sons (ponteiros na tabela de passos da página E; ver sound.c) */
 enum {
@@ -181,6 +183,7 @@ extern struct game g;
 
 /* ---------------------------------------------------------------- jogo */
 void game_main(void);           /* 0x110 reset: não retorna */
+void game_resume(void);         /* continua um jogo salvo (não existe no original) */
 
 /* anim.c */
 void reset_pet_animation(void); /* 0x465 */
