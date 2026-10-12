@@ -1,0 +1,6 @@
+#!/bin/sh
+# Tamagotchi P1 nativo (reescrita em C). Teclas: ← ↓ → (ou A S D) = botões; F = 10x.
+# Salva ao fechar em ~/.local/share/tamagotchi-p1/save.bin. Use -n para começar do zero.
+cd "$(dirname "$0")" || exit 1
+[ -x src/tama ] || make -s -C src tama || exit 1
+exec src/tama -r rom/tama.b "$@"

@@ -1,20 +1,35 @@
-# Status (2026-10-11)
+# Status (2026-10-12)
 
-## Feito
-- Harness `trace` + tools (asm.py, cmpframes.py). Commitado.
-- RE estático das 8 faixas 0x000–0xFFF em re/notes/ (pseudo-C, RAM, tabelas de evolução, check_events, sprites, som).
-- Explorador dinâmico foi INTERROMPIDO (limite de uso): o que ele deixou está em re/ e scripts/ (pode estar incompleto).
+## Pronto
+- **Reescrita completa do jogo em C** (`src/`), sem emular o CPU: boot, acerto do relógio,
+  ovo/eclosão, tela do pet com animação e overlays, os 7 ícones (comida, luz, jogo, remédio,
+  banheiro, status, disciplina), eventos (dormir, chamadas, cocô, doença), evolução, morte/lápide,
+  reset mantendo o relógio, teste de LCD de fábrica, som.
+- **Jogável**: `./tama-nativo` (SDL2; ← ↓ → ou A S D; F = 10x; salva ao fechar em
+  `~/.local/share/tamagotchi-p1/save.bin`; `-n` começa do zero). Com o app fechado o tempo para.
+- **Validação contra o emulador** (`tools/validate.sh`): estado do jogo (RAM mapeada) igual
+  em todos os scripts, exceto os casos abaixo; som igual; frames iguais um a um no boot/relógio,
+  teste de fábrica e lápide→reset; no resto, mesmas telas/animações com ritmo ~1% diferente.
 
-## Errata / decisões
-- Botões em RAM: bit0=R, bit1=M, bit2=L (hw.c: K00=R, K01=M, K02=L). As notas 0x000 e 0x800 dizem L=bit0: ERRADO.
-- 0x5D = espécie (0 ovo, 1 Babytchi, ...), 0x50 = estágio de evolução.
-- 0x4A bit3: notas divergem (dormindo vs morto); 0x200/0xF00 indicam DORMINDO — confirmar no trace.
-- Tick do prog timer medido: 27,247 ms. Clock: 1 Hz.
+## Diferenças conhecidas (todas de *tempo*, não de lógica)
+- O ritmo das telas é o do CPU original; a reescrita usa custos medidos por rotina e acerta
+  ~1–2%. Consequências:
+  - fase de animações de 2 quadros (cocô, "Z" do sono = 0x4A bits 0-2, contador 0x07E) pode
+    sair invertida depois de animações com timeout;
+  - o **jogo de adivinhar** usa o contador 0x05A (+1 por tick); o resultado depende do tick
+    exato em que o botão é lido, então os sorteios diferem do emulador (o mecanismo é o mesmo);
+  - pressões de botão a < 1 s uma da outra podem cair em voltas diferentes do laço (ex.:
+    `t_care_light`); o pisca de 0,2 s do ícone de atenção na virada do minuto é uma corrida.
+- Não testado: morte por velhice (anjo).
 
-## Próximo
-1. Consolidar re/ram-map.md a partir das notas (+ terminar fluxos/scripts dinâmicos).
-2. Arquitetura da reescrita: código sequencial como o original; `yield()` avança 1 prog tick
-   e chama on_prog_tick()/on_clock_tick() (ISRs em C). Estado em struct com nomes.
-   Dados volumosos (sprites, som, scripts de animação, blocos por espécie) extraídos da ROM no build;
-   regras (evolução) escritas à mão em C.
-3. Front-ends: SDL2 e headless (mesmo formato de script do harness) → validar com tools/cmpframes.py.
+## Errata das notas de RE (re/notes) — o código está certo, as notas não
+- Botões em RAM: bit0=R, bit1=M, bit2=L (notas 0x000 e 0x800 dizem L=bit0).
+- 0x5D = espécie, 0x50 = estágio; 0x4A bit3 = dormindo (não "morto"); evento 4 = cocô.
+- O prog timer roda livre a 256/7 Hz (27,34 ms); a ISR de 1 Hz não reinicia a fase.
+- Laço de limpeza do init (0x047) zera 16 nibbles por volta: o init limpa 0x000–0x0DF,
+  0x100–0x26F e o LCD inteiro (notas 0x200 §2.4 erradas).
+- Teste de fábrica, 1º passo: XP ainda é 2, então os ícones não acendem (bug do original).
+
+## Ideias
+- Tempo exato por instrução (para sorteios idênticos) exigiria contar ciclos do caminho real.
+- Pet que continua vivendo com o app fechado; base para o pet com biologia/Needle/Nostr.

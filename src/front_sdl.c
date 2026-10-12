@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <signal.h>
 #include <SDL.h>
 #ifdef HAVE_SDL_IMAGE
 #include <SDL_image.h>
@@ -34,6 +35,9 @@ static bool dirty = true;
 static double wall0, emu0;       /* sincronia: wall0 (s) corresponde a emu0 (s emulado) */
 static int speed = 1;
 static char save_path[1024];
+static volatile sig_atomic_t want_quit;
+
+static void on_signal(int sig) { (void) sig; want_quit = 1; }
 
 /* ---- som: onda quadrada na frequência do buzzer ---- */
 static SDL_AudioDeviceID audio;
@@ -125,6 +129,7 @@ void front_pump(double t)
 	static double last_render;
 	SDL_Event e;
 
+	if (want_quit) quit();
 	/* não deixa o tempo emulado passar à frente do relógio real */
 	for (;;) {
 		double ahead = (t - emu0) / speed - (wall() - wall0);
@@ -173,6 +178,8 @@ int main(int argc, char **argv)
 		snprintf(save_path, sizeof(save_path), "%s/save.bin", dir);
 	}
 
+	signal(SIGINT, on_signal);
+	signal(SIGTERM, on_signal);
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0) { fprintf(stderr, "SDL: %s\n", SDL_GetError()); return 1; }
 	win = SDL_CreateWindow("Tamagotchi P1", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WIN_W, WIN_H, 0);
 	ren = SDL_CreateRenderer(win, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);

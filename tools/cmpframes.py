@@ -65,8 +65,10 @@ def intervals(frames, end):
     return out
 
 if a.tol is not None:
+    # quadros curtos (< --min) só deixam de ser cobrados; como par vale a lista completa
+    ref_all, new_all = settle(load(a.ref, a.until), 0), settle(load(a.new, a.until), 0)
     end = min(ref[-1][0], new[-1][0])
-    ri, ni = intervals(ref, end), intervals(new, end)
+    ri, ni = intervals(ref_all, end), intervals(new_all, end)
     bad = []
     for name, src, dst in (('ref', ref, ni), ('nova', new, ri)):
         for i, (t, f) in enumerate(src):
