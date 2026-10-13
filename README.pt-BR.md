@@ -46,11 +46,13 @@ make -C src            # precisa de SDL2 (SDL2_image é opcional, para os ícone
 
 ## Fidelidade
 
-O estado do jogo bate com o emulador em todos os roteiros, exceto onde o resultado depende do
-tempo exato; boot, relógio, teste de fábrica e lápide batem quadro a quadro. O ritmo das
-animações difere ~1–2%, o que pode inverter a fase de animações de 2 quadros, mudar os sorteios do
-jogo de adivinhar e a leitura de botões apertados a menos de 1 s um do outro. Detalhes em
-`STATUS.md`.
+Medida contra o TamaLIB com `tools/validate.sh` (números exatos por roteiro em `STATUS.md`, em
+inglês): boot, relógio e teste de fábrica batem quadro a quadro. Nos roteiros mais longos o
+estado do jogo mapeado bate, exceto em casos que dependem do tempo (fase do "Z" do sono, sorteios
+do jogo de adivinhar e uma corrida de apertos de botão), mas o ritmo da reescrita difere ~0,5–2%:
+o ovo choca ~1,8 s depois do emulador, a fase de animações de 2 quadros pode inverter e a
+comparação quadro a quadro quebra a partir daí. Ou seja, é uma reimplementação fiel da lógica,
+não idêntica quadro a quadro.
 
 ## Licença
 

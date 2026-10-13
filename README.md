@@ -49,11 +49,13 @@ make -C src            # needs SDL2 (SDL2_image is optional, for the icons)
 
 ## Fidelity
 
-The game state matches the emulator in every script, except where the outcome depends on exact
-timing; boot, clock, factory test and tombstone match frame for frame. The animation pace
-differs by ~1–2%, which can flip the phase of 2-frame animations, change the draws in the
-guessing game and change how buttons pressed less than 1 s apart are read. Details in
-`STATUS.md`.
+Measured against TamaLIB with `tools/validate.sh` (exact numbers per script in `STATUS.md`):
+boot, clock and the factory test match frame for frame. In the longer scripts the mapped game
+state matches except for timing-dependent cases (the sleep "Z" phase, the guessing game's random
+draws and one button-press race), but the rewrite's pace differs by ~0.5–2%: the egg hatches
+~1.8 s later than in the emulator, the phase of 2-frame animations can end up inverted, and the
+frame-by-frame comparison breaks from there on. So this is a faithful reimplementation of the
+logic, not a frame-exact one.
 
 ## License
 

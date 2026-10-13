@@ -8,15 +8,42 @@
 - **Playable**: `./tama-nativo` (SDL2; ← ↓ → or A S D; F = 10x; saves on exit to
   `~/.local/share/tamagotchi-p1/save.bin`; `-n` starts from scratch). While the app is closed,
   time stands still.
-- **Validation against the emulator** (`tools/validate.sh`): game state (mapped RAM) is identical
-  in every script except the cases below; sound identical; frames identical one by one for
-  boot/clock, factory test and tombstone→reset; elsewhere, the same screens/animations with a
-  pace ~1% off.
+- **Validation against the emulator** (`tools/validate.sh`): see the table below for the exact
+  results per script. Short version: boot/clock and the factory test match the emulator frame for
+  frame; in the longer scripts the game state matches except for the timing-dependent cases listed
+  below, but the frame sequences drift apart (animation phase) and the tolerant frame comparison
+  fails in most of them.
 - **Builds** (GitHub Actions): Windows (.exe), Android (APK), WebAssembly. Released as `v0.1.0`
   (pre-release). None of them has been tested on a real Windows machine, a real device or a
   browser yet.
 
-## Known differences (all of *timing*, not of logic)
+## Validation results (run of 2026-10-12, `tools/validate.sh`)
+`ram` compares the mapped RAM dump by dump, `sound` the buzzer events, `frames` the LCD frames.
+"ram: only rng" means the only difference is `0x05A rng`, which is a dump artifact (a dump that
+lands exactly on a prog timer tick).
+
+| script | ram | sound | frames, strict | frames, tolerant (±15 s) |
+|---|---|---|---|---|
+| `t_boot` | equal | equal | equal (29 frames) | ok |
+| `t_life_factory` | equal | equal | equal (15 frames) | ok |
+| `t_care_food`, `t_care_medicine`, `t_care_toilet`, `t_info_status` | only rng | equal | diverges at hatching | fails (few frames) |
+| `t_hatch_dump`, `t_info_game_sick`, `t_life_evolve`, `t_life_death` | only rng | equal (`t_life_death`: differs) | diverges at hatching | fails (animation phase after the first poop) |
+| `t_care_discipline`, `t_info_game_sleep` | differs: `0x04A` bits 0-2 (phase of the sleep "Z") | equal | diverges at hatching | fails |
+| `t_care_light` | differs: light state and saved cursor (button-press race) | differs | diverges at hatching | fails |
+| `t_info_game` | differs: the guessing game's draws (`0x041`, `0x083`, `0x084`) | differs | diverges at hatching | fails |
+| `t_hatch` | (no dump) | equal | diverges at hatching | fails |
+
+Notes:
+- "Diverges at hatching": the egg hatches ~1.8 s later in the rewrite (t = 310.7 s vs 308.9 s in the
+  emulator, ~0.6%), so every strict comparison breaks there. Frames before that point match.
+- In the long scripts the tolerant comparison fails from the first poop (t ≈ 1219 s) on: the phase
+  of the 2-frame poop animation is inverted, so those frames never find a match on the other side.
+  In the shorter ones it fails from t ≈ 325–356 s (a few frames); that cause was not investigated.
+- The sound difference in `t_life_death` was not investigated.
+- The earlier claim that the tombstone→reset sequence matches frame for frame was **not** reproduced
+  in this run (the strict comparison breaks at hatching, long before it).
+
+## Known differences (believed to be timing, not logic — but see the table)
 - The pace of the screens is that of the original CPU; the rewrite uses per-routine measured
   costs and gets within ~1–2%. Consequences:
   - the phase of 2-frame animations (poop, sleep "Z" = 0x4A bits 0-2, counter 0x07E) may come
